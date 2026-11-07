@@ -1286,9 +1286,11 @@ void main(){
   }
 
   // Resolution scales down automatically if frames get slow
-  let scale = Math.min(devicePixelRatio || 1, 1.25);
+  // render resolution: phones and tablets start lower, the shader is heavy; drops further if frames are slow
+  const touch = matchMedia("(pointer: coarse)").matches;
+  let renderScale = touch ? Math.min(devicePixelRatio || 1, 0.8) : Math.min(devicePixelRatio || 1, 1.25);
   function resize() {
-    const w = Math.floor(innerWidth * scale), h = Math.floor(innerHeight * scale);
+    const w = Math.floor(innerWidth * renderScale), h = Math.floor(innerHeight * renderScale);
     if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; }
     gl.viewport(0, 0, w, h);
   }
@@ -1443,7 +1445,7 @@ void main(){
     time += dt * (reduced ? 0.25 : 1);
 
     if (dt > 0.03) slowFrames++; else slowFrames = Math.max(0, slowFrames - 1);
-    if (slowFrames > 40 && scale > 0.5) { scale *= 0.8; slowFrames = 0; resize(); }
+    if (slowFrames > 40 && renderScale > 0.4) { renderScale *= 0.8; slowFrames = 0; resize(); }
 
     const k = 1 - Math.pow(0.02, dt);
     const mx = grab.active ? sm.x : mouse.x, my = grab.active ? sm.y : mouse.y;
