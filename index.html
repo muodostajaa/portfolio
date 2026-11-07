@@ -1,0 +1,1568 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Sonja · Portfolio</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Manrope:wght@400;500;600&display=swap">
+<style>
+  /* Layout: one full-bleed Lapland night scene; type and UI float on the corners like a print poster */
+  :root {
+    --ink: #03060d;
+    --paper: #f2f7ff;
+    --muted: #a7b8cf;
+    --line: rgba(242, 247, 255, 0.55);
+    --glow: rgba(70, 255, 170, 0.18);
+    --faint: rgba(242, 247, 255, 0.14);
+    --aurora: rgba(61, 255, 158, 0.4);
+    --gutter: clamp(16px, 4vw, 48px);
+    --display: "Bebas Neue", "Oswald", "Impact", "Arial Narrow", sans-serif;
+    --body: "Manrope", "Segoe UI", system-ui, sans-serif;
+    color-scheme: dark;
+  }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    background: var(--ink);
+    color: var(--paper);
+    font-family: var(--body);
+    overflow: hidden;
+  }
+  #stage {
+    position: fixed; inset: 0;
+    width: 100%; height: 100%;
+    display: block;
+    background: var(--ink);
+    touch-action: none;
+  }
+  #stage.can-grab { cursor: grab; }
+  #stage.grabbing { cursor: grabbing; }
+  .ui {
+    position: fixed; inset: 0;
+    padding: calc(28px + env(safe-area-inset-top, 0px)) clamp(16px, 4vw, 48px) calc(28px + env(safe-area-inset-bottom, 0px));
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    pointer-events: none;
+  }
+  .ui > * { pointer-events: auto; }
+
+  header { display: flex; justify-content: space-between; align-items: center; gap: 16px; }
+  .brand { display: flex; align-items: center; gap: 0; color: var(--paper); text-decoration: none; }
+  .logo { width: 22px; height: 22px; display: block; overflow: visible; margin: 0 5px 0 0; }
+  .brand .wordmark:first-child { margin-right: 10px; }
+  .logo-star { transform-origin: 18px 11px; transition: transform .8s cubic-bezier(.2,.8,.2,1); }
+  .brand:hover .logo-star, .brand:focus-visible .logo-star { transform: rotate(45deg) scale(0.9); }
+  .brand:focus-visible { outline: 2px solid var(--muted); outline-offset: 6px; }
+  /* wordmark: the same tall display face as the headline, tracked out the same way */
+  .wordmark { font-family: var(--display); font-size: 21px; font-weight: 400; line-height: 1; letter-spacing: 0.3em; text-transform: uppercase; padding-top: 2px; }
+  @media (prefers-reduced-motion: reduce) { .logo-star { transition: none; } }
+
+  nav { display: flex; gap: clamp(16px, 3vw, 36px); }
+  nav a {
+    color: var(--paper); text-decoration: none;
+    font-size: 13px; font-weight: 500; letter-spacing: 0.02em;
+    position: relative; padding-block: 4px;
+  }
+  nav a::after {
+    content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 1px;
+    background: var(--paper); transform: scaleX(0); transform-origin: left;
+    transition: transform .35s ease;
+  }
+  nav a:hover::after, nav a:focus-visible::after { transform: scaleX(1); }
+
+  .hero { display: grid; place-items: center; pointer-events: none; }
+  .word {
+    margin: 0;
+    font-family: var(--display);
+    font-weight: 400;
+    font-size: clamp(64px, 17vw, 240px);
+    line-height: 1;
+    letter-spacing: 0.32em;
+    margin-right: -0.32em;
+    text-shadow: 0 0 40px rgba(0, 0, 0, 0.45);
+    display: flex;
+    white-space: nowrap;
+  }
+  .word span {
+    display: inline-block;
+    transition: transform .7s cubic-bezier(.2,.8,.2,1), opacity .5s ease, filter .6s ease;
+  }
+  .word span.out { transform: translateY(40%); opacity: 0; filter: blur(8px); }
+
+  footer { display: flex; justify-content: space-between; align-items: flex-end; gap: 24px; }
+  .info { max-width: 270px; min-width: 0; text-shadow: 0 1px 12px rgba(0, 0, 0, 0.6); }
+  .count {
+    display: flex; align-items: center; gap: 16px;
+    font-size: 20px; font-weight: 500; font-variant-numeric: tabular-nums;
+    margin-bottom: 18px;
+  }
+  .count::after { content: ""; width: 56px; height: 1px; background: var(--line); }
+  .geo {
+    margin: 0 0 10px; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--muted); font-variant-numeric: tabular-nums;
+  }
+  .blurb {
+    margin: 0; font-size: 13px; line-height: 1.6; color: var(--paper);
+    transition: opacity .45s ease, transform .45s ease;
+  }
+  .blurb.out, .geo.out { opacity: 0; transform: translateY(8px); }
+  .geo { transition: opacity .45s ease, transform .45s ease; }
+  .controls { display: grid; gap: 14px; }
+  .controls button {
+    width: 46px; height: 46px; border-radius: 50%;
+    border: 1.5px solid var(--paper); background: transparent; color: var(--paper);
+    display: grid; place-items: center; cursor: pointer;
+    transition: background .3s ease, color .3s ease, transform .3s ease;
+  }
+  .controls button:hover { background: var(--paper); color: var(--ink); transform: scale(1.06); }
+  .controls button:focus-visible { outline: 2px solid var(--muted); outline-offset: 4px; }
+  .controls svg { width: 18px; height: 18px; }
+
+  .hint {
+    position: fixed; left: 50%; bottom: calc(30px + env(safe-area-inset-bottom, 0px));
+    transform: translateX(-50%);
+    font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted);
+    pointer-events: none; white-space: nowrap;
+    text-shadow: 0 1px 10px rgba(0, 0, 0, 0.7);
+  }
+  .fallback {
+    position: fixed; inset: 0; z-index: -1;
+    background: radial-gradient(60% 40% at 50% 30%, var(--glow), transparent 70%), var(--ink);
+  }
+
+
+  /* ---------- project orb label (the orb itself is drawn in WebGL) ---------- */
+  #stage.on-orb { cursor: pointer; }
+  .orb-tag {
+    position: fixed; z-index: 3; left: 0; top: 0;
+    display: flex; align-items: center; gap: 12px;
+    padding: 6px 0; border: 0; background: none; color: var(--paper);
+    font: inherit; text-align: left; cursor: pointer;
+    opacity: 0; pointer-events: none; transition: opacity .5s ease;
+    text-shadow: 0 1px 10px rgba(0, 0, 0, 0.7);
+    will-change: transform;
+  }
+  .orb-tag.live { opacity: 1; pointer-events: auto; }
+  .orb-tag::before { content: ""; width: 32px; height: 1px; background: var(--line); transition: width .4s ease; }
+  .orb-tag:hover::before, .orb-tag.hot::before { width: 52px; }
+  .orb-tag span {
+    display: grid; line-height: 1.6; white-space: nowrap;
+    font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted);
+  }
+  .orb-tag b { font-size: 11px; font-weight: 500; letter-spacing: 0.14em; color: var(--paper); }
+  .orb-tag:focus-visible { outline: 2px solid var(--muted); outline-offset: 4px; }
+
+  /* ---------- project pop-up ---------- */
+  .project {
+    position: fixed; inset: 0; z-index: 40;
+    display: grid; place-items: center;
+    padding: calc(84px + env(safe-area-inset-top, 0px)) var(--gutter) calc(28px + env(safe-area-inset-bottom, 0px));
+    background: rgba(3, 6, 13, 0.8);
+    -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px);
+    opacity: 0; visibility: hidden; transition: opacity .45s ease, visibility 0s .45s;
+  }
+  .project.open { opacity: 1; visibility: visible; transition: opacity .45s ease; }
+  .sheet {
+    width: min(1180px, 100%); max-height: 100%; overflow: auto;
+    display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr);
+    gap: clamp(20px, 3.5vw, 52px); align-items: center;
+    transform: scale(0.9); opacity: 0;
+    transition: transform .7s cubic-bezier(.2,.8,.2,1), opacity .5s ease;
+  }
+  .project.open .sheet { transform: none; opacity: 1; }
+  .p-media { min-width: 0; display: grid; gap: 14px; }
+  .p-frame {
+    position: relative; width: 100%; max-width: 100%;
+    border: 1px solid var(--faint); border-radius: 2px; overflow: hidden; background: #070b14;
+  }
+  .p-frame img, .p-frame video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+  .p-frame img { transition: opacity .6s ease; }
+  .p-steps { display: flex; align-items: center; gap: 14px; font-size: 12px; letter-spacing: 0.16em; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .p-steps[hidden] { display: none; }
+  .p-text { min-width: 0; display: grid; gap: 16px; align-content: center; }
+  .p-meta {
+    display: flex; align-items: center; gap: 14px;
+    font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted);
+  }
+  .p-meta::after { content: ""; width: 40px; height: 1px; background: var(--line); }
+  .p-text h2 {
+    margin: 0; font-family: var(--display); font-weight: 400;
+    font-size: clamp(40px, 4.6vw, 68px); line-height: 0.95; letter-spacing: 0.08em;
+    text-wrap: balance;
+  }
+  .p-text p { margin: 0; max-width: 46ch; font-size: 14px; line-height: 1.7; color: rgba(242, 247, 255, 0.8); }
+  .p-tags { display: flex; flex-wrap: wrap; gap: 6px 18px; margin: 0; padding: 0; list-style: none; }
+  .p-tags li { font-size: 12px; color: var(--muted); }
+  .p-tags li::before { content: "— "; color: var(--faint); }
+  .p-close { position: absolute; top: calc(24px + env(safe-area-inset-top, 0px)); right: var(--gutter); }
+  .round {
+    width: 46px; height: 46px; border-radius: 50%; padding: 0;
+    border: 1.5px solid var(--paper); background: transparent; color: var(--paper);
+    display: grid; place-items: center; cursor: pointer;
+    transition: background .3s ease, color .3s ease, transform .3s ease;
+  }
+  .round.small { width: 38px; height: 38px; }
+  .round:hover { background: var(--paper); color: var(--ink); transform: scale(1.06); }
+  .round:focus-visible { outline: 2px solid var(--muted); outline-offset: 4px; }
+  .round svg { width: 16px; height: 16px; }
+
+  @media (max-width: 860px) {
+    .sheet { grid-template-columns: minmax(0, 1fr); align-items: start; }
+    .orb-tag span { font-size: 9px; }
+  }
+
+  /* ---------- Work: a frosted panel over the scene, opened from the nav ---------- */
+  .ui { z-index: 31; }
+  .ui main, .ui footer, .hint { transition: opacity .6s ease, transform .6s ease, visibility 0s; }
+  .work-open .ui main, .work-open .ui footer, .work-open .hint {
+    opacity: 0; visibility: hidden; transform: translateY(12px);
+    transition: opacity .5s ease, transform .5s ease, visibility 0s .5s;
+  }
+  nav a[aria-current="page"]::after { transform: scaleX(1); }
+  .work {
+    position: fixed; inset: 0; z-index: 30; overflow-y: auto;
+    display: grid; align-content: center;
+    padding: calc(110px + env(safe-area-inset-top, 0px)) var(--gutter) calc(40px + env(safe-area-inset-bottom, 0px));
+    background: rgba(3, 6, 13, 0.6);
+    -webkit-backdrop-filter: blur(18px) saturate(1.15); backdrop-filter: blur(18px) saturate(1.15);
+    opacity: 0; visibility: hidden; transition: opacity .7s ease, visibility 0s .7s;
+  }
+  .work.open { opacity: 1; visibility: visible; transition: opacity .7s ease; }
+  .w-inner { width: min(1180px, 100%); margin: 0 auto; display: grid; gap: clamp(28px, 4vw, 56px); }
+  .w-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 20px 40px; flex-wrap: wrap; }
+  .w-head .count { margin-bottom: 12px; }
+  .w-title {
+    margin: 0; font-family: var(--display); font-weight: 400;
+    font-size: clamp(56px, 10vw, 150px); line-height: 0.9;
+    letter-spacing: 0.32em; margin-right: -0.32em; display: flex;
+  }
+  .w-title span { display: inline-block; transition: transform .8s cubic-bezier(.2,.8,.2,1), opacity .6s ease, filter .7s ease; }
+  .work:not(.open) .w-title span { transform: translateY(40%); opacity: 0; filter: blur(8px); }
+  .w-side { display: flex; align-items: flex-end; gap: 28px; }
+  .w-side p { margin: 0; max-width: 32ch; font-size: 14px; line-height: 1.6; color: var(--muted); }
+  .w-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: clamp(20px, 3vw, 40px); }
+  .w-card {
+    display: grid; gap: 14px; min-width: 0; padding: 0; border: 0; background: none;
+    color: inherit; font: inherit; text-align: left; cursor: pointer;
+    transition: transform 1s cubic-bezier(.2,.8,.2,1), opacity .8s ease, filter .9s ease;
+  }
+  .w-card:nth-child(2) { transition-delay: .12s; }
+  .work:not(.open) .w-card { transform: translateY(48px); opacity: 0; filter: blur(10px); transition-delay: 0s; }
+  .w-frame {
+    position: relative; display: block; aspect-ratio: 16 / 10; max-width: 100%; overflow: hidden;
+    border: 1px solid var(--faint); border-radius: 2px; background: #070b14;
+    transition: border-color .6s ease, box-shadow .8s ease;
+  }
+  .w-frame img, .w-frame video {
+    position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block;
+    transition: transform 1.4s cubic-bezier(.2,.7,.2,1), opacity .9s ease;
+  }
+  .w-frame .alt { opacity: 0; }
+  .w-frame::after {
+    content: ""; position: absolute; inset: 0; pointer-events: none;
+    background: linear-gradient(115deg, transparent 35%, rgba(255, 255, 255, 0.12) 50%, transparent 65%);
+    transform: translateX(-120%); transition: transform 1.3s ease;
+  }
+  .w-card:hover .w-frame, .w-card:focus-visible .w-frame { border-color: var(--line); box-shadow: 0 30px 90px -40px var(--aurora); }
+  .w-card:hover .w-frame img, .w-card:hover .w-frame video { transform: scale(1.04); }
+  .w-card:hover .w-frame .alt { opacity: 1; }
+  .w-card:hover .w-frame::after { transform: translateX(120%); }
+  .w-card:focus-visible { outline: none; }
+  .w-card:focus-visible .w-frame { outline: 2px solid var(--muted); outline-offset: 4px; }
+  .w-meta {
+    display: flex; justify-content: space-between; gap: 12px;
+    font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted);
+  }
+  .w-card h3 { margin: 0; font-family: var(--display); font-weight: 400; font-size: clamp(28px, 2.8vw, 42px); line-height: 1; letter-spacing: 0.1em; }
+  .w-more { display: flex; align-items: center; gap: 12px; font-size: 12px; color: var(--muted); }
+  .w-more::before { content: ""; width: 24px; height: 1px; background: var(--line); transition: width .4s ease; }
+  .w-card:hover .w-more::before { width: 48px; }
+  @media (max-width: 760px) {
+    .w-list { grid-template-columns: minmax(0, 1fr); }
+    .work { align-content: start; }
+    .w-title { letter-spacing: 0.2em; margin-right: -0.2em; }
+  }
+
+  /* ---------- About: the same blurred backdrop as Work and CV, with a small card top right ---------- */
+  #aboutPanel { display: block; padding: 0; }
+  #aboutPanel .w-inner {
+    position: absolute; top: calc(78px + env(safe-area-inset-top, 0px)); right: var(--gutter); margin: 0;
+    width: min(400px, calc(100% - 2 * var(--gutter))); gap: 16px; padding: 0;
+    transform: translateY(-10px); opacity: 0;
+    transition: opacity .5s ease, transform .6s cubic-bezier(.2,.8,.2,1);
+  }
+  #aboutPanel.open .w-inner { transform: none; opacity: 1; transition-delay: .1s; }
+  #aboutPanel .w-head { align-items: center; flex-wrap: nowrap; }
+  #aboutPanel .w-head .count { margin-bottom: 6px; }
+  #aboutPanel .w-title { font-size: 40px; letter-spacing: 0.2em; margin-right: -0.2em; }
+  #aboutPanel .round { width: 34px; height: 34px; }
+  #aboutPanel .round svg { width: 14px; height: 14px; }
+  .a-body { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 18px; align-items: center; }
+  .a-photo { position: relative; margin: 0; aspect-ratio: 1 / 1; overflow: hidden; border: 1px solid var(--line); border-radius: 50%; background: #070b14; }
+  .a-photo img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+  .a-text { display: grid; gap: 10px; }
+  .a-text p { margin: 0; font-size: 13px; line-height: 1.55; color: var(--muted); }
+  .a-text p:first-child { font-size: 14px; color: var(--paper); }
+  @media (max-width: 420px) { .a-body { grid-template-columns: 72px minmax(0, 1fr); } }
+  @media (prefers-reduced-motion: reduce) { #aboutPanel .w-inner { transition: none; } }
+
+  /* ---------- CV: same frosted panel as Work, three short columns ---------- */
+  #cvPanel { background: rgba(3, 6, 13, 0.9); -webkit-backdrop-filter: blur(24px) saturate(1.05); backdrop-filter: blur(24px) saturate(1.05); }
+  #cvPanel .cv-col li span, #cvPanel .cv-col li time, #cvPanel .cv-col h3 { color: #c3d0e2; }
+  .cv-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(28px, 4vw, 56px); }
+  .cv-col { display: grid; align-content: start; gap: clamp(24px, 3vw, 36px); transition: transform 1s cubic-bezier(.2,.8,.2,1), opacity .8s ease, filter .9s ease; }
+  .cv-col:nth-child(2) { transition-delay: .1s; }
+  .cv-col:nth-child(3) { transition-delay: .2s; }
+  .work:not(.open) .cv-col { transform: translateY(40px); opacity: 0; filter: blur(10px); transition-delay: 0s; }
+  .cv-col h3 { margin: 0 0 12px; padding-bottom: 10px; border-bottom: 1px solid var(--faint); font-size: 11px; font-weight: 500; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); }
+  .cv-col ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 12px; }
+  .cv-col li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 16px; font-size: 14px; line-height: 1.45; }
+  .cv-col li b { font-weight: 600; }
+  .cv-col li span { grid-column: 1; color: var(--muted); font-size: 13px; }
+  .cv-col li time { grid-column: 2; grid-row: 1; color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .cv-tags { display: flex; flex-wrap: wrap; gap: 8px; }
+  .cv-tags li { display: block; padding: 5px 11px; border: 1px solid var(--faint); border-radius: 999px; font-size: 12px; }
+  @media (max-width: 860px) { .cv-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 560px) { .cv-grid { grid-template-columns: minmax(0, 1fr); } }
+  @media (prefers-reduced-motion: reduce) { .cv-col { transition: none; } }
+
+  /* ---------- intro: the page opens on black, the scene fades up, then the type ---------- */
+  .intro-black { position: fixed; inset: 0; z-index: 100; background: #000; pointer-events: none; animation: introFade 3.2s ease-in-out .3s forwards; }
+  @keyframes introFade { to { opacity: 0; visibility: hidden; } }
+  .ui header, .ui main, .ui footer { animation: introUp 1.6s cubic-bezier(.2,.8,.2,1) backwards; }
+  .ui header { animation-delay: 2s; }
+  .ui main { animation-delay: 2.4s; }
+  .ui footer { animation-delay: 2.8s; }
+  @keyframes introUp { from { opacity: 0; transform: translateY(14px); filter: blur(6px); } }
+  @media (prefers-reduced-motion: reduce) {
+    .intro-black { animation-duration: 1s; animation-delay: 0s; }
+    .ui header, .ui main, .ui footer { animation: none; }
+  }
+
+  @media (max-width: 640px) {
+    .hint { display: none; }
+    .word { letter-spacing: 0.18em; margin-right: -0.18em; }
+    .info { max-width: 220px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .word span, .blurb, .geo, .sheet, .orb-tag, .w-card, .w-title span, .work { transition: none; }
+  }
+</style>
+
+<div class="intro-black" aria-hidden="true"></div>
+<div class="fallback" aria-hidden="true"></div>
+<canvas id="stage" aria-hidden="true"></canvas>
+
+<div class="ui">
+  <header>
+    <a href="#" class="brand" id="homeLink" aria-label="Sonja Tähtinen, home">
+      <!-- wordmark: SONJA ★NEN, the star stands in for "TÄHTI" (Finnish for star) -->
+      <span class="wordmark" aria-hidden="true">Sonja</span>
+      <svg class="logo" viewBox="7.5 0.5 21 21" fill="none" aria-hidden="true">
+        <path class="logo-star" d="M18 1.5 L19.6 9.4 L27.5 11 L19.6 12.6 L18 20.5 L16.4 12.6 L8.5 11 L16.4 9.4 Z" fill="currentColor"/>
+      </svg>
+      <span class="wordmark" aria-hidden="true">nen</span>
+    </a>
+    <nav aria-label="Main">
+      <a href="#work">Work</a>
+      <a href="#about">About me</a>
+      <a href="#cv">CV</a>
+    </nav>
+  </header>
+
+  <main class="hero">
+    <h1 class="word" id="word" aria-live="polite"></h1>
+  </main>
+
+  <footer>
+    <div class="info">
+      <div class="count" id="count">01</div>
+      <p class="geo" id="geo"></p>
+      <p class="blurb" id="blurb"></p>
+    </div>
+    <div class="controls">
+      <button id="next" type="button" aria-label="Next slide">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg>
+      </button>
+      <button id="prev" type="button" aria-label="Previous slide">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>
+      </button>
+    </div>
+  </footer>
+</div>
+
+<section class="work" id="workPanel" role="dialog" aria-modal="true" aria-labelledby="workTitle" aria-hidden="true">
+  <div class="w-inner">
+    <div class="w-head">
+      <div>
+        <div class="count" id="workCount">02</div>
+        <h2 class="w-title" id="workTitle" aria-label="Work"></h2>
+      </div>
+      <div class="w-side">
+        <p>Packaging systems and product films, from the first sketch to the final render.</p>
+        <button class="round" id="workClose" type="button" aria-label="Close work"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+      </div>
+    </div>
+    <div class="w-list" id="workList"></div>
+  </div>
+</section>
+
+<section class="work" id="aboutPanel" role="dialog" aria-modal="true" aria-labelledby="aboutTitle" aria-hidden="true">
+  <div class="w-inner">
+    <div class="w-head">
+      <div>
+        <div class="count">Hello</div>
+        <h2 class="w-title" id="aboutTitle" aria-label="About me"></h2>
+      </div>
+      <div class="w-side">
+        <button class="round" id="aboutClose" type="button" aria-label="Close about me"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+      </div>
+    </div>
+    <div class="a-body">
+      <figure class="a-photo"><img src="media/oma.png" alt="Portrait of Sonja Tähtinen" width="424" height="424"></figure>
+      <div class="a-text">
+        <p>I model in 3D, design packaging, write the manuals nobody reads (but really should) and keep projects on schedule with a smile and a very long to-do list.</p>
+        <p>When I'm not designing, I'm vibe coding something new, picking up yet another hobby, dreaming up the next big idea or just taking it easy at the cottage.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="work" id="cvPanel" role="dialog" aria-modal="true" aria-labelledby="cvTitle" aria-hidden="true">
+  <div class="w-inner">
+    <div class="w-head">
+      <div>
+        <div class="count">Short</div>
+        <h2 class="w-title" id="cvTitle" aria-label="CV"></h2>
+      </div>
+      <div class="w-side">
+        <p>Senior Visual Design Specialist. Technical documentation, packaging design, 3D visualisation and animation.</p>
+        <button class="round" id="cvClose" type="button" aria-label="Close CV"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+      </div>
+    </div>
+    <div class="cv-grid">
+      <div class="cv-col">
+        <div>
+          <h3>Selected projects</h3>
+          <ul>
+            <li><b>Vaisala</b><time>2020–</time><span>Packaging design</span></li>
+            <li><b>Fiskars</b><time>2020–</time><span>Concept development for new product packaging</span></li>
+            <li><b>KONE</b><time>2026</time><span>Packaging labeling and design</span></li>
+            <li><b>Picosun, Framery, Helvar, Pellon, Serres</b><time>2020–2023</time><span>Technical documentation and illustrations</span></li>
+            <li><b>Obelux</b><time>2022</time><span>Offshore wind farm animation</span></li>
+            <li><b>Schneider Electric</b><time>2021</time><span>Demo design, display and usability</span></li>
+          </ul>
+        </div>
+      </div>
+      <div class="cv-col">
+        <div>
+          <h3>Experience</h3>
+          <ul>
+            <li><b>Misal Illumination</b><time>2019</time><span>Visual Design Specialist</span></li>
+            <li><b>Snellmann Primary School</b><time>2015–2017</time><span>Assistant and substitute teacher</span></li>
+            <li><b>Obelux</b><time>2008–2014</time><span>Visual Design Specialist</span></li>
+            <li><b>MTV3</b><time>2005–2008</time><span>Host</span></li>
+          </ul>
+        </div>
+        <div>
+          <h3>Education</h3>
+          <ul>
+            <li><b>Special Education and Teaching</b><time>2019</time></li>
+            <li><b>Bachelor of Arts</b><time>2008</time></li>
+          </ul>
+        </div>
+      </div>
+      <div class="cv-col">
+        <div>
+          <h3>Tools</h3>
+          <ul class="cv-tags">
+            <li>SolidWorks</li><li>SolidWorks Composer</li><li>KeyShot</li><li>Illustrator</li><li>InDesign</li>
+            <li>Photoshop</li><li>After Effects</li><li>Figma</li><li>Confluence</li><li>Jira</li>
+          </ul>
+        </div>
+        <div>
+          <h3>Languages</h3>
+          <ul>
+            <li><b>Finnish</b><time>Native</time></li>
+            <li><b>English</b><time>Good</time></li>
+            <li><b>Swedish</b><time>Basic</time></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<button class="orb-tag" id="orbTag" type="button" aria-haspopup="dialog" tabindex="-1"><span id="orbTagText"></span></button>
+
+<div class="project" id="project" role="dialog" aria-modal="true" aria-labelledby="pTitle" aria-hidden="true">
+  <button class="round p-close" id="pClose" type="button" aria-label="Close project"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+  <div class="sheet" id="sheet">
+    <div class="p-media">
+      <div class="p-frame" id="pFrame"></div>
+      <div class="p-steps" id="pSteps">
+        <button class="round small" id="pPrev" type="button" aria-label="Previous image"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button>
+        <button class="round small" id="pNext" type="button" aria-label="Next image"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg></button>
+        <span id="pCount"></span>
+      </div>
+    </div>
+    <div class="p-text">
+      <div class="p-meta" id="pMeta"></div>
+      <h2 id="pTitle"></h2>
+      <p id="pBody"></p>
+      <ul class="p-tags" id="pTags"></ul>
+    </div>
+  </div>
+</div>
+
+<div class="hint">Grab the snow and stretch it · scroll to switch</div>
+
+<script>
+(() => {
+  // pal: [aurora low, aurora crown, ice tint, aurora accent]
+  const SLIDES = [
+    { word: "DESIGN", geo: "Käpylä · 60°13′N · Kp 4 · −16 °C",
+      blurb: "A designer who focuses on 3D modeling, packaging design, technical documentation and project management.",
+      pal: ["#3dff9e", "#8b5cff", "#a8e8ff", "#2be0c8"] },
+    { word: "MOTION", geo: "Oulu · 65°01′N · Kp 5 · −12 °C",
+      blurb: "Less talk, more doing: I keep things moving from the first sketch to the finished product.",
+      pal: ["#7ce8c8", "#ff66bc", "#eed6f4", "#dd5fe0"] },
+    { word: "CODE", geo: "Helsinki · 60°10′N · Kp 6 · −6 °C",
+      blurb: "Speaks fluent prompt: vibe codes any product or program, from a wild idea to something that actually works.",
+      pal: ["#2bffd5", "#3d7bff", "#d8f2ff", "#a46bff"] },
+  ];
+
+  const wordEl = document.getElementById("word");
+  const blurbEl = document.getElementById("blurb");
+  const geoEl = document.getElementById("geo");
+  const countEl = document.getElementById("count");
+  const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  // ---------- Text slides ----------
+  let index = 0, busy = false;
+  function renderWord(w, hidden) {
+    wordEl.innerHTML = "";
+    [...w].forEach((ch, i) => {
+      const s = document.createElement("span");
+      s.textContent = ch;
+      s.style.transitionDelay = (i * 0.05) + "s";
+      if (hidden) s.classList.add("out");
+      wordEl.appendChild(s);
+    });
+  }
+  function setSlide(i, instant) {
+    const s = SLIDES[i];
+    countEl.textContent = String(i + 1).padStart(2, "0");
+    if (instant) { renderWord(s.word); blurbEl.textContent = s.blurb; geoEl.textContent = s.geo; return; }
+    busy = true;
+    wordEl.querySelectorAll("span").forEach(sp => sp.classList.add("out"));
+    blurbEl.classList.add("out"); geoEl.classList.add("out");
+    setTimeout(() => {
+      renderWord(s.word, true);
+      blurbEl.textContent = s.blurb; geoEl.textContent = s.geo;
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        wordEl.querySelectorAll("span").forEach(sp => sp.classList.remove("out"));
+        blurbEl.classList.remove("out"); geoEl.classList.remove("out");
+      }));
+      setTimeout(() => busy = false, 600);
+    }, reduced ? 0 : 520);
+  }
+  function go(dir) {
+    if (busy || window.__projectOpen || window.__workOpen || window.__aboutOpen || window.__cvOpen) return;
+    index = (index + dir + SLIDES.length) % SLIDES.length;
+    setSlide(index);
+    updateBubble(index);
+    target.seed += dir * 2.3;
+    target.pal = SLIDES[index].pal.map(hex);
+  }
+  document.getElementById("next").addEventListener("click", () => go(1));
+  document.getElementById("prev").addEventListener("click", () => go(-1));
+  addEventListener("keydown", e => {
+    if (e.key === "ArrowRight" || e.key === "ArrowDown") go(1);
+    if (e.key === "ArrowLeft" || e.key === "ArrowUp") go(-1);
+  });
+  let wheelLock = 0;
+  addEventListener("wheel", e => {
+    const now = performance.now();
+    if (now < wheelLock || Math.abs(e.deltaY) < 12) return;
+    wheelLock = now + 900;
+    go(e.deltaY > 0 ? 1 : -1);
+  }, { passive: true });
+
+  function hex(h) {
+    const n = parseInt(h.slice(1), 16);
+    return [(n >> 16 & 255) / 255, (n >> 8 & 255) / 255, (n & 255) / 255];
+  }
+  const target = { seed: 0, pal: SLIDES[0].pal.map(hex) };
+  const cur = { seed: 0, pal: target.pal.map(c => c.slice()) };
+
+  // ---------- project orb: one project per slide, drawn as a droplet inside the sculpture ----------
+  const MEDIA = "media/";
+  const PROJECTS = {
+    packing: {
+      title: "A new way of packing", meta: "Packaging · Vaisala",
+      body: "A packaging family for Vaisala: kraft corrugated board with a matte black band for the product label. One system that runs from the shipping box down to the product box, so every size reads as the same brand.",
+      tags: ["Packaging design", "Brand", "3D visualisation"],
+      bubble: { type: "image", src: MEDIA + "packing-1-sm.jpg" },
+      ratio: "1920 / 1358",
+      media: [
+        { type: "image", src: MEDIA + "packing-1.jpg", alt: "Vaisala packaging family with open mailer box and stacked product boxes" },
+        { type: "image", src: MEDIA + "packing-2.jpg", alt: "Open Vaisala mailer box with insert card next to stacked product boxes" } ] },
+    huld: {
+      title: "Don't reinvent the wheel", meta: "Marketing film · Huld · 0:15",
+      body: "A marketing film for Huld's technical documentation service. A bicycle crankset flies apart into its parts, then clicks together onto a new frame. Good documentation lets you reuse what already works.",
+      tags: ["Marketing film", "Exploded view", "3D animation"],
+      bubble: { type: "video", src: MEDIA + "huld-sm.mp4", poster: MEDIA + "huld-sm.jpg" },
+      ratio: "16 / 9",
+      media: [{ type: "video", src: MEDIA + "huld.mp4", poster: MEDIA + "huld-sm.jpg",
+        alt: "Huld marketing film: an exploded bicycle crankset assembles onto a new frame" }] },
+  };
+
+  const orbTag = document.getElementById("orbTag"), orbTagText = document.getElementById("orbTagText");
+  const pop = document.getElementById("project"), sheet = document.getElementById("sheet");
+  const pFrame = document.getElementById("pFrame"), pSteps = document.getElementById("pSteps");
+  const pCount = document.getElementById("pCount");
+  let wantKey = null, openKey = null, step = 0, lastFocus = null;
+  const orbScreen = { x: 0, y: 0, r: 0, live: false, key: null };   // filled in by the renderer each frame
+  window.__projectOpen = false;
+
+  function updateBubble(i) { wantKey = SLIDES[i].project || null; }
+
+  function showStep() {
+    const p = PROJECTS[openKey], m = p.media[step];
+    pFrame.style.aspectRatio = p.ratio;
+    pFrame.innerHTML = m.type === "video"
+      ? `<video src="${m.src}" poster="${m.poster}" controls autoplay muted loop playsinline aria-label="${m.alt}"></video>`
+      : `<img src="${m.src}" alt="${m.alt}">`;
+    pSteps.hidden = p.media.length < 2;
+    pCount.textContent = `${step + 1} / ${p.media.length}`;
+  }
+  function openProject(key, ox, oy) {
+    if (typeof key !== "string") {
+      if (!orbScreen.live || !orbScreen.key) return;
+      key = orbScreen.key; ox = orbScreen.x; oy = orbScreen.y;
+    }
+    const p = PROJECTS[key];
+    openKey = key; step = 0; lastFocus = document.activeElement;
+    document.getElementById("pMeta").textContent = p.meta;
+    document.getElementById("pTitle").textContent = p.title;
+    document.getElementById("pBody").textContent = p.body;
+    document.getElementById("pTags").innerHTML = p.tags.map(t => `<li>${t}</li>`).join("");
+    showStep();
+    // grow the sheet out of the orb
+    const r = sheet.getBoundingClientRect();
+    sheet.style.transformOrigin = `${ox - r.left}px ${oy - r.top}px`;
+    pop.classList.add("open"); pop.setAttribute("aria-hidden", "false");
+    window.__projectOpen = true;
+    document.getElementById("pClose").focus();
+  }
+  function closeProject() {
+    if (!window.__projectOpen) return;
+    pop.classList.remove("open"); pop.setAttribute("aria-hidden", "true");
+    window.__projectOpen = false;
+    const v = pFrame.querySelector("video"); if (v) v.pause();
+    setTimeout(() => { if (!pop.classList.contains("open")) pFrame.innerHTML = ""; }, 500);
+    if (lastFocus && lastFocus !== document.body) lastFocus.focus();
+  }
+  function stepBy(d) {
+    const n = PROJECTS[openKey].media.length;
+    if (n < 2) return;
+    step = (step + d + n) % n; showStep();
+  }
+  orbTag.addEventListener("click", () => openProject());
+
+  // ---------- Work panel ----------
+  const WORK = ["packing", "huld"];
+  const workPanel = document.getElementById("workPanel"), workList = document.getElementById("workList");
+  const navWork = document.querySelector('nav a[href="#work"]');
+  window.__workOpen = false;
+  document.getElementById("workCount").textContent = String(WORK.length).padStart(2, "0");
+  [..."WORK"].forEach((ch, i) => {
+    const sp = document.createElement("span");
+    sp.textContent = ch; sp.setAttribute("aria-hidden", "true");
+    sp.style.transitionDelay = (0.15 + i * 0.06) + "s";
+    document.getElementById("workTitle").appendChild(sp);
+  });
+  const extra = {
+    packing: { media: `<img src="${MEDIA}packing-1.jpg" alt="" loading="lazy"><img class="alt" src="${MEDIA}packing-2.jpg" alt="" loading="lazy">`, more: "2 renders" },
+    huld: { media: `<video src="${MEDIA}huld.mp4" poster="${MEDIA}huld-sm.jpg" muted loop playsinline preload="none"></video>`, more: "Film · 0:15" },
+  };
+  WORK.forEach(key => {
+    const p = PROJECTS[key], x = extra[key];
+    const card = document.createElement("button");
+    card.type = "button"; card.className = "w-card";
+    card.setAttribute("aria-label", `Open project: ${p.title}`);
+    card.innerHTML = `<span class="w-frame">${x.media}</span>
+      <span class="w-meta"><span>${p.meta.split(" · ").slice(0, 2).join(" · ")}</span><span>${x.more}</span></span>
+      <h3>${p.title}</h3>
+      <span class="w-more">View project</span>`;
+    card.addEventListener("click", () => {
+      const r = card.querySelector(".w-frame").getBoundingClientRect();
+      openProject(key, r.left + r.width / 2, r.top + r.height / 2);
+    });
+    workList.appendChild(card);
+  });
+  let workReturn = null;
+  function openWork() {
+    if (window.__workOpen) return;
+    window.__workOpen = true; workReturn = document.activeElement;
+    workPanel.classList.add("open"); workPanel.setAttribute("aria-hidden", "false");
+    document.body.classList.add("work-open");
+    navWork.setAttribute("aria-current", "page");
+    if (!reduced) workList.querySelectorAll("video").forEach(v => v.play().catch(() => {}));
+    setTimeout(() => document.getElementById("workClose").focus({ preventScroll: true }), 50);
+  }
+  function closeWork() {
+    if (!window.__workOpen) return;
+    window.__workOpen = false;
+    workPanel.classList.remove("open"); workPanel.setAttribute("aria-hidden", "true");
+    document.body.classList.remove("work-open");
+    navWork.removeAttribute("aria-current");
+    workList.querySelectorAll("video").forEach(v => v.pause());
+    if (workReturn && workReturn !== document.body) workReturn.focus({ preventScroll: true });
+  }
+  navWork.addEventListener("click", e => { e.preventDefault(); window.__workOpen ? closeWork() : openWork(); });
+  document.getElementById("homeLink").addEventListener("click", e => { e.preventDefault(); closeWork(); });
+  document.getElementById("workClose").addEventListener("click", closeWork);
+  workPanel.addEventListener("click", e => { if (e.target === workPanel) closeWork(); });
+  addEventListener("keydown", e => {
+    if (e.key === "Escape" && window.__workOpen && !window.__projectOpen) closeWork();
+  });
+
+  // ---------- About panel (reuses the Work panel look) ----------
+  const aboutPanel = document.getElementById("aboutPanel");
+  const navAbout = document.querySelector('nav a[href="#about"]');
+  window.__aboutOpen = false;
+  [..."ABOUT ME"].forEach((ch, i) => {
+    const sp = document.createElement("span");
+    sp.textContent = ch; sp.setAttribute("aria-hidden", "true");
+    sp.style.transitionDelay = (0.15 + i * 0.06) + "s";
+    document.getElementById("aboutTitle").appendChild(sp);
+  });
+  let aboutReturn = null;
+  function openAbout() {
+    if (window.__aboutOpen) return;
+    closeWork();
+    window.__aboutOpen = true; aboutReturn = document.activeElement;
+    aboutPanel.classList.add("open"); aboutPanel.setAttribute("aria-hidden", "false");
+    document.body.classList.add("work-open");
+    navAbout.setAttribute("aria-current", "page");
+    setTimeout(() => document.getElementById("aboutClose").focus({ preventScroll: true }), 50);
+  }
+  function closeAbout() {
+    if (!window.__aboutOpen) return;
+    window.__aboutOpen = false;
+    aboutPanel.classList.remove("open"); aboutPanel.setAttribute("aria-hidden", "true");
+    if (!window.__workOpen && !window.__cvOpen) document.body.classList.remove("work-open");
+    navAbout.removeAttribute("aria-current");
+    if (aboutReturn && aboutReturn !== document.body) aboutReturn.focus({ preventScroll: true });
+  }
+  navAbout.addEventListener("click", e => { e.preventDefault(); window.__aboutOpen ? closeAbout() : openAbout(); });
+  navWork.addEventListener("click", () => closeAbout(), true);
+  document.getElementById("homeLink").addEventListener("click", () => closeAbout());
+  document.getElementById("aboutClose").addEventListener("click", closeAbout);
+  aboutPanel.addEventListener("click", e => { if (e.target === aboutPanel) closeAbout(); });
+  addEventListener("keydown", e => { if (e.key === "Escape" && window.__aboutOpen) closeAbout(); });
+
+  // ---------- CV panel (reuses the Work panel look) ----------
+  const cvPanel = document.getElementById("cvPanel");
+  const navCv = document.querySelector('nav a[href="#cv"]');
+  window.__cvOpen = false;
+  [..."CV"].forEach((ch, i) => {
+    const sp = document.createElement("span");
+    sp.textContent = ch; sp.setAttribute("aria-hidden", "true");
+    sp.style.transitionDelay = (0.15 + i * 0.06) + "s";
+    document.getElementById("cvTitle").appendChild(sp);
+  });
+  let cvReturn = null;
+  function openCv() {
+    if (window.__cvOpen) return;
+    closeWork(); closeAbout();
+    window.__cvOpen = true; cvReturn = document.activeElement;
+    cvPanel.classList.add("open"); cvPanel.setAttribute("aria-hidden", "false");
+    document.body.classList.add("work-open");
+    navCv.setAttribute("aria-current", "page");
+    setTimeout(() => document.getElementById("cvClose").focus({ preventScroll: true }), 50);
+  }
+  function closeCv() {
+    if (!window.__cvOpen) return;
+    window.__cvOpen = false;
+    cvPanel.classList.remove("open"); cvPanel.setAttribute("aria-hidden", "true");
+    if (!window.__workOpen) document.body.classList.remove("work-open");
+    navCv.removeAttribute("aria-current");
+    if (cvReturn && cvReturn !== document.body) cvReturn.focus({ preventScroll: true });
+  }
+  navCv.addEventListener("click", e => { e.preventDefault(); window.__cvOpen ? closeCv() : openCv(); });
+  navWork.addEventListener("click", () => closeCv(), true);
+  navAbout.addEventListener("click", () => closeCv(), true);
+  document.getElementById("homeLink").addEventListener("click", () => closeCv());
+  document.getElementById("cvClose").addEventListener("click", closeCv);
+  cvPanel.addEventListener("click", e => { if (e.target === cvPanel) closeCv(); });
+  addEventListener("keydown", e => { if (e.key === "Escape" && window.__cvOpen) closeCv(); });
+  document.getElementById("pClose").addEventListener("click", closeProject);
+  document.getElementById("pPrev").addEventListener("click", () => stepBy(-1));
+  document.getElementById("pNext").addEventListener("click", () => stepBy(1));
+  pop.addEventListener("click", e => { if (e.target === pop) closeProject(); });
+  addEventListener("keydown", e => {
+    if (!window.__projectOpen) return;
+    if (e.key === "Escape") { closeProject(); e.stopImmediatePropagation(); }   // Esc closes only the top layer
+    if (e.key === "ArrowRight") stepBy(1);
+    if (e.key === "ArrowLeft") stepBy(-1);
+  }, true);
+
+  setSlide(0, true);
+  updateBubble(0);
+
+  // ---------- WebGL scene ----------
+  const canvas = document.getElementById("stage");
+  const gl = canvas.getContext("webgl", { antialias: false, alpha: true, premultipliedAlpha: false });
+  if (!gl) { canvas.remove(); return; }
+
+  const vs = `attribute vec2 p; void main(){ gl_Position = vec4(p, 0.0, 1.0); }`;
+  const fs = `
+precision highp float;
+uniform vec2 uRes;
+uniform float uTime, uSeed, uSnow;
+uniform float uLiquid, uFlow;   // how melted the sculpture is, and its flow clock
+uniform float uGone;            // 0 = sculpture there, 1 = drained away completely
+uniform vec4 uMeteor;           // shooting star: head xy, heading (radians), brightness 0..1
+uniform float uMeteorLen;       // its tail length
+uniform vec2 uMouse;
+uniform vec3 uC1, uC2, uC3, uC4;
+uniform vec3 uGrab, uPull;
+uniform vec3 uProjPos;
+uniform float uProjR, uTexAspect, uProjJig;
+uniform sampler2D uTex;
+
+mat2 rot(float a){ float c = cos(a), s = sin(a); return mat2(c, -s, s, c); }
+float smin(float a, float b, float k){ float h = clamp(0.5 + 0.5*(b - a)/k, 0.0, 1.0); return mix(b, a, h) - k*h*(1.0 - h); }
+float hash(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+float hash3(vec3 p){ p = fract(p * 0.3183099 + 0.1); p *= 17.0; return fract(p.x * p.y * p.z * (p.x + p.y + p.z)); }
+float noise(vec3 x){
+  vec3 i = floor(x), f = fract(x);
+  f = f * f * (3.0 - 2.0 * f);
+  return mix(mix(mix(hash3(i), hash3(i + vec3(1,0,0)), f.x),
+                 mix(hash3(i + vec3(0,1,0)), hash3(i + vec3(1,1,0)), f.x), f.y),
+             mix(mix(hash3(i + vec3(0,0,1)), hash3(i + vec3(1,0,1)), f.x),
+                 mix(hash3(i + vec3(0,1,1)), hash3(i + vec3(1,1,1)), f.x), f.y), f.z);
+}
+float fbm(vec3 p){
+  float a = 0.5, s = 0.0;
+  for (int i = 0; i < 4; i++){ s += a * noise(p); p = p * 2.03 + vec3(1.7, 9.2, 3.1); a *= 0.5; }
+  return s;
+}
+vec3 lin(vec3 c){ return c * c; }
+
+// ---------- sky ----------
+// a.x = horizontal angle, a.y = elevation above the horizon
+vec3 aurora(vec2 a, float detail){
+  vec3 acc = vec3(0.0);
+  for (int i = 0; i < 4; i++){
+    float fi = float(i);
+    float x = a.x * (1.0 + fi * 0.25) + fi * 1.9;
+    float base = 0.26 + fi * 0.08 + 0.09 * sin(x * 1.6 + uTime * 0.12 + fi * 2.0)
+               + 0.08 * (noise(vec3(x * 2.2, uTime * 0.08, fi * 3.0)) - 0.5);
+    float d = a.y - base;
+    float e = mix(0.07, 0.016, detail);      // softer lower edge when out of focus
+    float curtain = smoothstep(-e, e * 0.75, d) * exp(-max(d, 0.0) * (4.0 + fi * 1.5));
+    float rays = mix(0.8, 0.35 + 1.1 * noise(vec3(x * 34.0, uTime * 0.35, fi * 5.0)), detail);
+    float pch = smoothstep(0.15, 0.6, 0.5 + 0.5 * sin(x * 0.9 + uTime * 0.06 + fi * 1.3));
+    vec3 c = mix(lin(uC1), lin(uC2), smoothstep(0.02, 0.28, d));
+    c = mix(c, lin(uC4), 0.25 * sin(fi * 2.1 + x) + 0.25);
+    acc += c * curtain * rays * pch * 0.55;
+  }
+  return acc;
+}
+
+vec3 env(vec3 r, float detail){
+  vec2 a = vec2(atan(r.x, -r.z) * 0.9, r.y * 0.9);
+  vec3 c = vec3(0.0008, 0.0016, 0.006) + vec3(0.002, 0.004, 0.012) * (1.0 - abs(r.y));
+  if (r.y > -0.05) c += aurora(a, detail) * 1.6;
+  // snowfield below the horizon, faintly lit by the aurora
+  c += vec3(0.05, 0.07, 0.1) * smoothstep(0.0, -0.4, r.y) + lin(uC1) * 0.06 * smoothstep(0.05, -0.3, r.y);
+  // the treeline all around: reflections carry a dark, ragged band of spruce tops along the horizon
+  float ang = atan(r.x, -r.z) * 38.0;
+  float cell = floor(ang);
+  float tip = 1.0 - 2.0 * abs(fract(ang) - 0.5);
+  float treeTop = 0.02 + 0.05 * hash(vec2(cell, 3.0)) * tip + 0.01 * sin(ang * 0.08);
+  float trees = smoothstep(treeTop + 0.006, treeTop - 0.006, r.y) * smoothstep(-0.03, 0.0, r.y);
+  c = mix(c, vec3(0.002, 0.003, 0.005), trees);
+  // a faint dome of skylight and a soft horizon band give the glossy surface something to mirror
+  c += vec3(0.05, 0.06, 0.085) * smoothstep(0.5, 1.0, r.y);
+  c += vec3(0.03, 0.04, 0.06) * exp(-abs(r.y) * 9.0);
+  // a low moon: one crisp highlight with a soft halo around it
+  float moon = dot(r, normalize(vec3(-0.55, 0.6, 0.6)));
+  c += vec3(0.9, 0.95, 1.0) * (6.0 * smoothstep(0.985, 0.995, moon) + 0.5 * smoothstep(0.9, 0.99, moon));
+  return c;
+}
+
+// The backdrop is drawn out of focus: every edge is widened by BLUR so the sculpture reads as the only sharp thing
+vec3 background(vec2 uv){
+  const float BLUR = 0.014;
+  float y = uv.y + 0.5;                       // 0 at the bottom of the screen
+  vec3 col = mix(vec3(0.0015, 0.003, 0.008), vec3(0.0003, 0.0005, 0.002), clamp(y, 0.0, 1.0));
+  vec2 a = vec2(uv.x * 1.2 + uMouse.x * 0.03, y - 0.12 + uMouse.y * 0.01);
+  col += aurora(a, 0.0) * 0.45;
+  col += lin(uC1) * 0.008 * exp(-abs(y - 0.45) * 3.0);
+
+  // stars, defocused into faint discs
+  vec2 suv = uv + uMouse * 0.012;
+  for (int l = 0; l < 2; l++){
+    float sc = l == 0 ? 60.0 : 32.0;
+    vec2 g = suv * sc + float(l) * 17.0;
+    vec2 id = floor(g); vec2 f = fract(g) - 0.5;
+    float h = hash(id);
+    if (h > 0.97){
+      vec2 o = vec2(hash(id + 3.1), hash(id + 7.7)) - 0.5;
+      float dd = length(f - o * 0.4);
+      float tw = 0.7 + 0.3 * sin(uTime * (0.6 + h * 1.5) + h * 40.0);
+      col += vec3(0.45, 0.55, 0.85) * smoothstep(0.22, 0.0, dd) * tw * 0.06 * smoothstep(0.1, 0.4, y);
+    }
+  }
+
+  // shooting star: a thin, faint streak with a fading tail, drawn behind the treeline
+  if (uMeteor.w > 0.0){
+    vec2 md = vec2(cos(uMeteor.z), sin(uMeteor.z));
+    vec2 rel = uv - uMeteor.xy;
+    float along = -dot(rel, md);                       // distance behind the head
+    float across = abs(dot(rel, vec2(-md.y, md.x)));
+    if (along > -0.01 && along < uMeteorLen){
+      float px = 1.0 / uRes.y;
+      float tail = 1.0 - clamp(along / uMeteorLen, 0.0, 1.0);
+      float line = smoothstep(px * 1.3, 0.0, across) * smoothstep(-0.006, 0.0, along);
+      col += vec3(0.75, 0.85, 1.0) * line * tail * tail * uMeteor.w * 0.4;
+    }
+  }
+
+  // spruce treeline: a far ridge and a near ridge of taiga
+  for (int l = 0; l < 2; l++){
+    float fl = float(l);
+    float sc = l == 0 ? 70.0 : 34.0;
+    float gx = (uv.x + uMouse.x * (0.01 + fl * 0.02)) * sc + fl * 31.0;
+    float id = floor(gx), fx = fract(gx) - 0.5;
+    float ground = (l == 0 ? 0.13 : 0.075) + 0.02 * sin(uv.x * 2.3 + fl * 4.0) + 0.012 * sin(uv.x * 7.1 + fl);
+    float h = (l == 0 ? 0.035 : 0.07) * (0.45 + 0.75 * hash(vec2(id, fl)));
+    float ty = (y - ground) / h;             // 0 at foot, 1 at tip
+    float w = (1.0 - clamp(ty, 0.0, 1.0)) * 0.36;
+    float bx = BLUR * sc, by = BLUR / h;
+    float dx = abs(fx + 0.06 * (hash(vec2(id, 9.0)) - 0.5));
+    float tree = smoothstep(-by, by, ty) * smoothstep(1.0 + by, 1.0 - by, ty) * smoothstep(w + bx, w - bx, dx);
+    float below = smoothstep(ground + BLUR, ground - BLUR, y);
+    vec3 tint = l == 0 ? vec3(0.002, 0.004, 0.008) + lin(uC1) * 0.003 : vec3(0.0003, 0.0006, 0.0012);
+    col = mix(col, tint, max(tree, below));
+  }
+
+  // falling snow, as soft out-of-focus flakes
+  for (int l = 0; l < 3; l++){
+    float fl = float(l);
+    float sc = 10.0 + fl * 9.0;
+    vec2 p = uv * sc;
+    p.y += uTime * (0.9 - fl * 0.2) * (sc / 14.0) * 0.18;
+    p.x += sin(p.y * 0.4 + fl * 3.0 + uTime * 0.5) * 0.4 + uMouse.x * (2.0 - fl);
+    vec2 id = floor(p), f = fract(p) - 0.5;
+    float h = hash(id + fl * 13.0);
+    if (h > 0.85){
+      vec2 o = vec2(hash(id + 1.3 + fl), hash(id + 5.1 + fl)) - 0.5;
+      float r = (0.08 + 0.08 * h) * (1.4 - fl * 0.3);
+      col += vec3(0.8, 0.86, 1.0) * smoothstep(r, 0.0, length(f - o * 0.6)) * (0.016 - fl * 0.004);
+    }
+  }
+  return col * 0.22;                         // overall backdrop level: keep it near black
+}
+
+// ---------- the sculpture ----------
+vec3 warp(vec3 p){
+  p.x -= uMouse.x * 0.18 * (p.y + 2.2) * 0.5;
+  p.z -= uMouse.y * 0.1 * p.y;
+  p.xz *= rot(p.y * 0.6 + uTime * 0.11 + uSeed * 0.3);
+  return p;
+}
+
+// the strand pulled out when you drag: thins as it gets longer and necks in the middle
+float tendril(vec3 p){
+  float L = length(uPull);
+  if (L < 0.02) return 1e3;
+  vec3 a = uGrab, b = uGrab + uPull;
+  vec3 pa = p - a, ba = b - a;
+  float h = clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0);
+  float thin = 1.0 / (1.0 + L * 0.9);
+  float r = mix(0.2, 0.1, h) * thin * (1.0 - 0.5 * h * (1.0 - h) * min(L, 1.5));
+  r *= smoothstep(0.02, 0.2, L);
+  float tip = length(p - b) - 0.16 * mix(1.0, 0.65, min(L * 0.5, 1.0)) * smoothstep(0.02, 0.2, L);
+  return smin(length(pa - ba * h) - r, tip, 0.14);
+}
+
+float body(vec3 p0){
+  float T = uFlow * 0.75;                 // the column moves slowly and evenly; a little faster when melted
+  vec3 g = p0 - uGrab;
+  vec3 p = p0 - uPull * 0.2 * exp(-dot(g, g) * 3.0);
+  p = warp(p);
+  // long, slow undulations: the column flows like a thick liquid rather than wobbling
+  p += (vec3(noise(p * 1.05 + vec3(0.0, T * 0.22, uSeed)),
+             noise(p * 0.9 + 4.7),
+             noise(p * 1.05 - vec3(T * 0.18, 0.0, 2.3))) - 0.5) * 0.36;
+  float d = 1e3;
+  for (int i = 0; i < 11; i++){
+    float fi = float(i);
+    float s = fi * 1.73 + uSeed;
+    float y = -2.25 + fi * 0.43;
+    vec3 c = vec3(sin(T*0.4 + s) * 0.28,
+                  y + sin(T*0.55 + s*1.3) * 0.12,
+                  cos(T*0.34 + s*0.9) * 0.22);
+    float r = 0.2 + 0.11 * sin(s*2.1 + T*0.3) + 0.05 * sin(fi*0.9);
+    vec3 q = p - c;
+    q.xz *= rot(s);
+    d = smin(d, length(q * vec3(1.0, 0.72, 1.25)) - r, 0.42);
+  }
+  for (int i = 0; i < 6; i++){
+    float fi = float(i);
+    float s = fi * 3.17 + floor(uSeed);
+    vec3 c = vec3(sin(s) * 0.62, mod(fi*0.83 + T*0.09 + s, 4.6) - 2.3, cos(s*1.3) * 0.45);
+    d = smin(d, length((p - c) * vec3(1.0, 0.85, 1.0)) - (0.05 + 0.04 * fract(s * 7.0)), 0.2);
+  }
+  // ice is glassy-smooth; snow is lumpy and packed
+  d += (noise(p * 4.0 + T * 0.25) - 0.5) * mix(0.016, 0.012, uSnow);
+  d += ((noise(p * 8.0) - 0.5) * 0.02 + (noise(p * 22.0) - 0.5) * 0.005) * uSnow;
+  // melted: thin runnels slide down the surface
+  d += sin(p.y * 16.0 + T * 2.6 + noise(p * 3.0) * 6.0) * 0.005 * uLiquid;
+  return d;
+}
+
+// the project droplet: a clear sphere fused into the column
+float orbSd(vec3 p){
+  if (uProjR < 0.001) return 1e3;
+  vec3 q = p - uProjPos;
+  // squash and stretch: the jiggle spring plus a slow breathing wobble
+  float sq = uProjJig + 0.07 * sin(uTime * 2.1);
+  q.y /= 1.0 + sq;
+  q.xz /= 1.0 - sq * 0.5;
+  q.xy *= rot(0.25 * sin(uTime * 0.9));
+  vec3 w = q / uProjR;
+  float waves = sin(w.x * 3.0 + uTime * 2.2) * sin(w.y * 3.4 - uTime * 1.8) * sin(w.z * 2.6 + uTime * 1.4);
+  return (length(q) - uProjR * (1.0 + 0.07 * waves)) * 0.8;
+}
+
+// vanishing: the column erodes evenly, splits into droplets and is gone; growing back runs it in reverse
+float map(vec3 p){
+  float s = uGone > 0.999 ? 1e3 : smin(body(p), tendril(p), 0.28) + uGone * 1.1;
+  return smin(s, orbSd(p), 0.24);
+}
+
+vec3 normalAt(vec3 p){
+  const vec2 e = vec2(0.0018, -0.0018);
+  return normalize(e.xyy*map(p + e.xyy) + e.yyx*map(p + e.yyx) + e.yxy*map(p + e.yxy) + e.xxx*map(p + e.xxx));
+}
+
+float softShadow(vec3 ro, vec3 rd){
+  float res = 1.0, t = 0.04;
+  for (int i = 0; i < 18; i++){
+    float h = map(ro + rd * t);
+    res = min(res, 8.0 * h / t);
+    t += clamp(h, 0.03, 0.25);
+    if (res < 0.01 || t > 2.5) break;
+  }
+  return clamp(res, 0.0, 1.0);
+}
+
+float ambientOcc(vec3 p, vec3 n){
+  float o = 0.0, w = 1.0;
+  for (int i = 1; i <= 4; i++){
+    float h = 0.04 * float(i);
+    o += (h - map(p + n * h)) * w;
+    w *= 0.7;
+  }
+  return clamp(1.0 - 3.0 * o, 0.0, 1.0);
+}
+
+vec3 aces(vec3 x){ return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), 0.0, 1.0); }
+
+vec3 reflSee(vec3 p, vec3 n, vec3 r, vec3 selfCol){
+  float t = 0.04, hit = 0.0;
+  for (int i = 0; i < 20; i++){
+    float h = map(p + n * 0.02 + r * t);
+    if (h < 0.004){ hit = 1.0 - smoothstep(0.4, 1.4, t); break; }   // nearby folds mirror each other
+    t += max(h, 0.03);
+    if (t > 1.4) break;
+  }
+  return mix(env(r, 1.0), selfCol, hit);
+}
+
+vec3 shade(vec3 p, vec3 rd, float dist){
+  vec3 n = normalAt(p);
+  vec3 q = warp(p);
+  vec3 L = normalize(vec3(-0.55, 0.6, 0.6));       // moonlight
+  float ndv = max(dot(n, -rd), 0.0);
+  float sh = softShadow(p + n * 0.01, L);
+  float ao = ambientOcc(p, n);
+  float thick = clamp(-map(p - n * 0.2) / 0.2, 0.0, 1.0);
+
+  // frost front: snow spreads and melts back through the column, starting from different spots
+  float front = uSnow * 2.6 - 1.3 + (fbm(q * 1.8 + uSeed) - 0.5) * 1.1 - q.y * 0.12;
+  float snow = smoothstep(-0.28, 0.28, front);
+  snow *= smoothstep(0.0, 0.25, tendril(p));       // stretched strands turn to ice
+
+  vec3 sky = env(n, 0.0);                           // aurora light falling on the surface
+  // reflections: self-reflections in the folds, and less reflection deep in creases (specular occlusion)
+  float specOcc = clamp(pow(ndv + ao, 2.0) - 1.0 + ao, 0.0, 1.0);
+  vec3 refl = reflSee(p, n, reflect(rd, n), sky * 0.5 + vec3(0.006, 0.01, 0.018)) * specOcc;
+  float F = 0.03 + 0.97 * pow(1.0 - ndv, 5.0);
+
+  // snow: bright, matte, blue in the shadows, glittering
+  vec3 albedo = vec3(0.86, 0.9, 0.96);
+  float wrap = clamp(dot(n, L) * 0.6 + 0.4, 0.0, 1.0);
+  vec3 snowCol = albedo * (vec3(0.55, 0.6, 0.7) * wrap * mix(0.4, 1.0, sh) + sky * 2.2) * ao;
+  snowCol += vec3(0.12, 0.22, 0.4) * (1.0 - thick) * 0.35 * ao;
+  // a wet sheen on the snow: it mirrors the sky at grazing angles and catches a soft moon highlight
+  snowCol += mix(refl, sky * specOcc, 0.6) * (0.05 + F * 0.6);
+  snowCol += vec3(1.0) * pow(max(dot(n, normalize(L - rd)), 0.0), 90.0) * 0.8 * sh;
+  vec3 cell = floor(p * 70.0);
+  float g = hash3(cell);
+  float tw = 0.5 + 0.5 * sin(uTime * 1.2 + g * 60.0);
+  float glint = smoothstep(0.984, 0.992, g) * tw * tw * pow(max(dot(reflect(rd, n), L), 0.0), 3.0) * sh;
+  snowCol += vec3(1.0, 1.0, 1.0) * glint * 3.0;
+
+  // ice: dark and clear, mirrors the aurora, with frost veins inside
+  vec3 tint = lin(uC3);
+  vec3 through = env(refract(rd, n, 0.76), 1.0) * 0.6 * exp(-(1.0 - tint) * (0.8 + 2.6 * thick));
+  float veins = 1.0 - smoothstep(0.0, 0.03, abs(fbm(q * 2.2 + 3.0) - 0.5));
+  vec3 iceCol = vec3(0.004, 0.012, 0.025) + through + tint * (1.0 - thick) * 0.05 * (sky + 0.05);
+  iceCol += vec3(0.6, 0.75, 0.9) * veins * 0.06 * (0.3 + sky * 4.0);
+  iceCol = mix(iceCol, refl, 0.2 + F * 0.8);
+  vec3 H = normalize(L - rd);
+  iceCol += vec3(1.0) * pow(max(dot(n, H), 0.0), 260.0) * 5.0 * sh;
+  iceCol += lin(mix(uC1, uC4, 0.5)) * pow(1.0 - ndv, 3.0) * 0.35;
+
+  // liquid: clear and bright, light swimming through it, wet highlights
+  vec3 throughL = env(refract(rd, n, 0.75), 1.0) * mix(vec3(1.0), tint, 0.5) * 0.9;
+  vec3 liqCol = vec3(0.006, 0.02, 0.04) + throughL + lin(uC1) * 0.05 * (1.0 - thick);
+  float caus = pow(abs(sin(q.x * 9.0 + uFlow * 1.4) * sin(q.y * 7.0 - uFlow * 1.1) * sin(q.z * 8.0 + uFlow * 0.9)), 3.0);
+  liqCol += lin(mix(uC1, uC2, 0.5)) * caus * 0.25 * (1.0 - thick * 0.5);
+  liqCol = mix(liqCol, refl, 0.08 + F * 0.9);
+  liqCol += vec3(1.0) * (pow(max(dot(n, H), 0.0), 120.0) * 2.5 + pow(max(dot(n, H), 0.0), 900.0) * 8.0) * sh;
+
+  vec3 col = mix(mix(iceCol, liqCol, uLiquid), snowCol, snow);
+
+  // inside the project droplet the render shows through, lensed like looking into a bead of ice
+  float wOrb = 1.0 - smoothstep(0.0, 0.07, orbSd(p));
+  if (wOrb > 0.0){
+    vec3 lp = (p - uProjPos) / max(uProjR, 0.001);
+    vec3 nr = refract(rd, n, 0.8);
+    vec2 t = lp.xy * 0.46 + nr.xy * 0.06;
+    t += 0.025 * vec2(sin(lp.y * 4.0 + uTime * 1.6), cos(lp.x * 4.0 + uTime * 1.3));   // the picture drifts like it is suspended in liquid
+    vec2 tuv = clamp(vec2(0.5 + t.x / max(uTexAspect, 1.0), 0.5 + t.y), 0.0, 1.0);
+    vec3 img = texture2D(uTex, tuv).rgb;
+    img *= img;
+    vec3 orbCol = img * (1.2 - 0.7 * pow(1.0 - ndv, 1.5));
+    orbCol = mix(orbCol, refl, 0.04 + F * 0.85);
+    orbCol += vec3(1.0) * pow(max(dot(n, H), 0.0), 260.0) * 5.0 * sh;
+    orbCol = mix(orbCol, col, smoothstep(0.6, 0.98, length(lp.xy)));   // the rim melts into the sculpture
+    col = mix(col, orbCol, wOrb);
+  }
+  return mix(col, vec3(0.002, 0.004, 0.01), smoothstep(3.6, 5.8, dist) * 0.3);
+}
+
+void main(){
+  vec2 uv = (gl_FragCoord.xy - 0.5 * uRes) / uRes.y;
+  vec3 ro = vec3(0.0, -0.1, 4.3);
+  vec3 rd = normalize(vec3(uv, -1.55));
+  vec3 col = background(uv);
+
+  float px = 1.5 / uRes.y;
+  float t = 2.2, bestT = 0.0, bestR = 1e3;
+  bool stretched = dot(uPull, uPull) > 0.0004;
+  float orbK = 1.55 / (ro.z - uProjPos.z);
+  bool nearOrb = uProjR > 0.001 && length(uv - (uProjPos.xy - ro.xy) * orbK) < uProjR * orbK * 1.7 + 0.03;
+  if (abs(uv.x) < 0.5 || stretched || nearOrb){
+    for (int i = 0; i < 84; i++){
+      float d = map(ro + rd * t);
+      float r = d / (t * px);
+      if (r < bestR){ bestR = r; bestT = t; }
+      if (d < 0.001) break;
+      t += d * 0.7;
+      if (t > 6.5) break;
+    }
+  }
+
+  float cover = 1.0 - smoothstep(0.0, 1.0, bestR);
+  if (cover > 0.0) col = mix(col, shade(ro + rd * bestT, rd, bestT), cover);
+
+  col = pow(aces(col * 1.15), vec3(1.0 / 2.2));
+  col *= 1.0 - 0.3 * dot(uv * 0.9, uv * 0.9);
+  // alpha 254 marks pixels of the sculpture so a click can tell if it hit it
+  col += (hash(gl_FragCoord.xy + fract(uTime) * 61.0) - 0.5) / 255.0;   // dither: no banding in the dark sky
+  gl_FragColor = vec4(col, cover > 0.5 ? 254.0 / 255.0 : 1.0);
+}`;
+
+  function compile(type, src) {
+    const s = gl.createShader(type);
+    gl.shaderSource(s, src); gl.compileShader(s);
+    if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) { console.error(gl.getShaderInfoLog(s)); return null; }
+    return s;
+  }
+  const prog = gl.createProgram();
+  const v = compile(gl.VERTEX_SHADER, vs), f = compile(gl.FRAGMENT_SHADER, fs);
+  if (!v || !f) { canvas.remove(); return; }
+  gl.attachShader(prog, v); gl.attachShader(prog, f); gl.linkProgram(prog);
+  gl.useProgram(prog);
+
+  const buf = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+  const loc = gl.getAttribLocation(prog, "p");
+  gl.enableVertexAttribArray(loc);
+  gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+
+  const U = {};
+  ["uRes", "uTime", "uSeed", "uSnow", "uLiquid", "uFlow", "uGone", "uMeteor", "uMeteorLen", "uMouse", "uC1", "uC2", "uC3", "uC4", "uGrab", "uPull", "uProjPos", "uProjR", "uTexAspect", "uProjJig", "uTex"]
+    .forEach(n => U[n] = gl.getUniformLocation(prog, n));
+
+  // ---------- project orb texture ----------
+  const tex = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, tex);
+  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([8, 12, 22, 255]));
+  gl.uniform1i(U.uTex, 0);
+  const orb = { spot: [0, -0.72], spotIndex: 0, key: null, grow: 0, src: null, video: null, aspect: 1, ready: false, loading: false };
+  const ORB_DELAY = 2.5;                    // seconds on a slide before the droplet surfaces
+  const ORB_CYCLE = ORB_DELAY + 8;          // the single appearance lasts 7.3 s
+  // places on the column where the droplet can surface, clear of the headline band and the corner UI
+  const ORB_SPOTS = [[0, -0.72], [-0.26, 0.62], [0.28, 0.7], [-0.28, -0.62], [0.26, -0.82], [0.02, 0.78]];
+  // the cursor as a point in the droplet's plane, kept far enough inside the screen that the whole droplet shows
+  function cursorSpot() {
+    const k = (4.3 - 0.32) / 1.55, half = innerWidth / innerHeight / 2;
+    const ux = Math.max(-half + 0.13, Math.min(half - 0.13, (pointer.x - innerWidth / 2) / innerHeight));
+    const uy = Math.max(-0.37, Math.min(0.37, (innerHeight / 2 - pointer.y) / innerHeight));
+    return [ux * k, -0.1 + uy * k];
+  }
+  function pickSpot() {
+    if (pointer) { orb.spot = cursorSpot(); orb.spotIndex = -1; return; }
+    let i;
+    do { i = Math.floor(Math.random() * ORB_SPOTS.length); } while (i === orb.spotIndex);
+    orb.spotIndex = i;
+    orb.spot = ORB_SPOTS[i];
+  }
+  const easeOutBack = x => 1 + 2.4 * Math.pow(x - 1, 3) + 1.4 * Math.pow(x - 1, 2);
+  const smooth = x => x * x * (3 - 2 * x);
+  const seg = (t, a, b) => Math.min(1, Math.max(0, (t - a) / (b - a)));
+  function orbScale(t) {
+    if (t < 1.3) return easeOutBack(seg(t, 0, 1.3));                          // swell out
+    if (t < 4.2) return 1 + 0.04 * Math.sin((t - 1.3) * 2.4);                // breathe
+    if (t < 5.2) return 1 + (0.68 - 1) * smooth(seg(t, 4.2, 5.2));           // shrink
+    if (t < 6.3) return 0.68 + (1.2 - 0.68) * easeOutBack(seg(t, 5.2, 6.3));  // swell larger
+    if (t < 7.3) { const x = seg(t, 6.3, 7.3); return 1.2 * (1 - x * x * x); } // sink away
+    return 0;                                                                 // rest inside the column
+  }
+  function upload(el) {
+    gl.bindTexture(gl.TEXTURE_2D, tex);
+    try { gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, el); } catch (_) {}
+  }
+  function loadOrb(key) {
+    if (orb.video) { orb.video.pause(); orb.video = null; }
+    orb.key = key; orb.ready = false;
+    if (!key) return;
+    const b = PROJECTS[key].bubble;
+    if (b.type === "video") {
+      const v = document.createElement("video");
+      v.muted = true; v.loop = true; v.playsInline = true; v.preload = "auto";
+      v.addEventListener("loadeddata", () => {
+        if (orb.key !== key) return;
+        orb.video = v; orb.aspect = v.videoWidth / v.videoHeight; orb.ready = true; upload(v);
+      });
+      v.src = b.src;
+      v.play().catch(() => {});
+    } else {
+      const img = new Image();
+      img.onload = () => {
+        if (orb.key !== key) return;
+        orb.aspect = img.width / img.height; orb.ready = true; upload(img);
+      };
+      img.src = b.src;
+    }
+  }
+
+  // Resolution scales down automatically if frames get slow
+  let scale = Math.min(devicePixelRatio || 1, 1.25);
+  function resize() {
+    const w = Math.floor(innerWidth * scale), h = Math.floor(innerHeight * scale);
+    if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; }
+    gl.viewport(0, 0, w, h);
+  }
+  addEventListener("resize", resize);
+  resize();
+
+  // ---------- pointer: bend, grab, stretch ----------
+  const mouse = { x: 0, y: 0 }, sm = { x: 0, y: 0 };
+  // screen point -> world point on a plane just in front of the sculpture's centre (matches the shader camera)
+  function toWorld(cx, cy) {
+    const ux = (cx - innerWidth / 2) / innerHeight, uy = (innerHeight / 2 - cy) / innerHeight;
+    const k = (4.3 - 0.15) / 1.55;
+    return [ux * k, -0.1 + uy * k, 0.15];
+  }
+  const grab = { active: false, anchor: [0, 0, 0], pull: [0, 0, 0], vel: [0, 0, 0], goal: [0, 0, 0], start: [0, 0, 0] };
+  let pick = null, lastHover = 0, pointer = null;
+
+  const onOrb = (x, y) => orbScreen.live && Math.hypot(x - orbScreen.x, y - orbScreen.y) < orbScreen.r;
+  canvas.addEventListener("pointerdown", e => {
+    if (onOrb(e.clientX, e.clientY)) { openProject(); return; }
+    pointer = { x: e.clientX, y: e.clientY };
+    pick = { x: e.clientX, y: e.clientY, kind: "grab", id: e.pointerId };
+  });
+  addEventListener("pointermove", e => {
+    mouse.x = (e.clientX / innerWidth) * 2 - 1;
+    mouse.y = -((e.clientY / innerHeight) * 2 - 1);
+    pointer = { x: e.clientX, y: e.clientY };
+    const hot = !grab.active && onOrb(e.clientX, e.clientY);
+    canvas.classList.toggle("on-orb", hot);
+    orbTag.classList.toggle("hot", hot);
+    if (grab.active) {
+      const w = toWorld(e.clientX, e.clientY);
+      let g = [w[0] - grab.start[0], w[1] - grab.start[1], 0.25 * Math.hypot(w[0] - grab.start[0], w[1] - grab.start[1])];
+      const L = Math.hypot(g[0], g[1], g[2]), max = 2.2;
+      if (L > max) g = g.map(c => c * max / L);
+      grab.goal = g;
+    } else if (e.pointerType === "mouse" && performance.now() - lastHover > 90 && !pick) {
+      lastHover = performance.now();
+      pick = { x: e.clientX, y: e.clientY, kind: "hover" };
+    }
+  });
+  function release() {
+    if (!grab.active) return;
+    grab.active = false;
+    grab.goal = [0, 0, 0];
+    canvas.classList.remove("grabbing");
+  }
+  addEventListener("pointerup", release);
+  addEventListener("pointercancel", release);
+
+  // swipe to change slides, unless the touch grabbed the snow
+  let touchY = null;
+  canvas.addEventListener("pointerdown", e => { if (e.pointerType !== "mouse") touchY = e.clientY; });
+  addEventListener("pointerup", e => {
+    if (touchY == null || e.pointerType === "mouse") return;
+    const dy = touchY - e.clientY;
+    if (!grab.used && Math.abs(dy) > 50) go(dy > 0 ? 1 : -1);
+    touchY = null; grab.used = false;
+  });
+
+  const px = new Uint8Array(4);
+  function runPick() {
+    if (!pick) return;
+    const x = Math.floor(pick.x * canvas.width / innerWidth);
+    const y = Math.floor((innerHeight - pick.y) * canvas.height / innerHeight);
+    gl.readPixels(x, y, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px);
+    const hit = px[3] < 255;
+    if (pick.kind === "hover") {
+      canvas.classList.toggle("can-grab", hit);
+    } else if (hit) {
+      // anchor the strand where the pointer went down
+      const w = toWorld(pick.x, pick.y);
+      grab.active = true; grab.used = true;
+      grab.start = w;
+      grab.anchor = w;
+      grab.pull = [0, 0, 0]; grab.vel = [0, 0, 0]; grab.goal = [0, 0, 0];
+      canvas.classList.add("grabbing");
+      try { canvas.setPointerCapture(pick.id); } catch (_) {}
+    }
+    pick = null;
+  }
+
+  // ---------- material cycle: snow -> liquid -> ice -> liquid -> snow, about 64 s a round ----------
+  // each step is [seconds, snow, liquid]; holds sit still, the steps between them blend slowly
+  const MATERIAL = [
+    [8, 1, 0],    // packed snow
+    [6, 0, 1],    // melting
+    [12, 0, 1],   // liquid
+    [6, 0, 0],    // freezing into clear ice
+    [8, 0, 0],    // ice
+    [6, 0, 1],    // melting again
+    [12, 0, 1],   // liquid
+    [6, 1, 0],    // snowing over
+  ];
+  const MATERIAL_LEN = MATERIAL.reduce((n, m) => n + m[0], 0);
+  const smoother = x => x * x * x * (x * (x * 6 - 15) + 10);
+  function materialAt(t) {
+    t %= MATERIAL_LEN;
+    let prev = MATERIAL[MATERIAL.length - 1];
+    for (const step of MATERIAL) {
+      if (t < step[0]) {
+        const k = step[1] === prev[1] && step[2] === prev[2] ? 1 : smoother(t / step[0]);
+        return { snow: prev[1] + (step[1] - prev[1]) * k, liquid: prev[2] + (step[2] - prev[2]) * k };
+      }
+      t -= step[0];
+      prev = step;
+    }
+    return { snow: 1, liquid: 0 };
+  }
+  let flow = 0;
+
+  // ---------- vanish cycle: there for a while, drains away, stays gone a moment, grows back ----------
+  const VANISH = { stay: 38, out: 3.5, gone: 6, back: 4.5 };
+  const VANISH_LEN = VANISH.stay + VANISH.out + VANISH.gone + VANISH.back;
+  // ---------- shooting stars: one every 25-50 s, under a second across the upper sky ----------
+  const meteor = { wait: 10 + Math.random() * 10, t: -1, x: 0, y: 0, a: 0, dur: 1, dist: 0.5 };
+  function stepMeteor(dt) {
+    if (reduced) return [0, 0, 0, 0];
+    if (meteor.t < 0) {
+      meteor.wait -= dt;
+      if (meteor.wait > 0) return [0, 0, 0, 0];
+      const aspect = innerWidth / innerHeight, dirRight = Math.random() < 0.5;
+      meteor.a = (dirRight ? 0 : Math.PI) + (dirRight ? -1 : 1) * (0.3 + Math.random() * 0.35);
+      meteor.x = (Math.random() * 0.9 - 0.45) * aspect;
+      meteor.y = 0.12 + Math.random() * 0.3;
+      meteor.dur = 0.7 + Math.random() * 0.5;
+      meteor.dist = 0.35 + Math.random() * 0.3;
+      meteor.t = 0;
+    }
+    meteor.t += dt / meteor.dur;
+    if (meteor.t >= 1) { meteor.t = -1; meteor.wait = 25 + Math.random() * 25; return [0, 0, 0, 0]; }
+    const d = meteor.dist * meteor.t;
+    return [meteor.x + Math.cos(meteor.a) * d, meteor.y + Math.sin(meteor.a) * d, meteor.a, Math.sin(Math.PI * meteor.t)];
+  }
+
+  let vanishClock = VANISH_LEN - VANISH.back - 1.5;   // first visit: the sculpture grows in from nothing as the black fades
+  function goneAt(t) {
+    t %= VANISH_LEN;
+    if (t < VANISH.stay) return 0;
+    t -= VANISH.stay;
+    if (t < VANISH.out) return smoother(t / VANISH.out);
+    t -= VANISH.out;
+    if (t < VANISH.gone) return 1;
+    t -= VANISH.gone;
+    return 1 - smoother(t / VANISH.back);
+  }
+
+  let last = performance.now(), time = 0, slowFrames = 0;
+  function frame(now) {
+    const dt = Math.min((now - last) / 1000, 0.05);
+    last = now;
+    time += dt * (reduced ? 0.25 : 1);
+
+    if (dt > 0.03) slowFrames++; else slowFrames = Math.max(0, slowFrames - 1);
+    if (slowFrames > 40 && scale > 0.5) { scale *= 0.8; slowFrames = 0; resize(); }
+
+    const k = 1 - Math.pow(0.02, dt);
+    const mx = grab.active ? sm.x : mouse.x, my = grab.active ? sm.y : mouse.y;
+    sm.x += (mx - sm.x) * k; sm.y += (my - sm.y) * k;
+    cur.seed += (target.seed - cur.seed) * (1 - Math.pow(0.15, dt));
+    cur.pal.forEach((c, i) => c.forEach((_, j) => c[j] += (target.pal[i][j] - c[j]) * (1 - Math.pow(0.1, dt))));
+
+    // spring: stiff and heavily damped while held, loose and wobbly when it snaps back
+    const stiff = grab.active ? 90 : 55, damp = grab.active ? 16 : 5;
+    for (let i = 0; i < 3; i++) {
+      const a = (grab.goal[i] - grab.pull[i]) * stiff - grab.vel[i] * damp;
+      grab.vel[i] += a * dt;
+      grab.pull[i] += grab.vel[i] * dt;
+    }
+
+    // snow comes and goes: holds as snow, melts to ice, freezes back (about 30 s a cycle)
+    const m = materialAt(time);
+    const snow = m.snow, liquid = m.liquid;
+    if (!grab.active) vanishClock += dt * (reduced ? 0.25 : 1);   // never vanishes while someone holds it
+    const gone = goneAt(vanishClock);
+    flow += dt * (1 + 0.5 * liquid) * (reduced ? 0.25 : 1);
+
+    // orb appearance (seconds): swell out at the cursor, breathe, shrink, swell larger, sink away; once per slide visit
+    if (orb.key !== wantKey) {
+      orb.leaving = Math.max(0, (orb.leaving ?? 1) - dt * 2.5);      // slide changed: sink away fast
+      // surfaces at the cursor; before the cursor has moved, the first appearance is under the headline
+      if (orb.leaving === 0) { if (orb.key !== null || pointer) pickSpot(); loadOrb(wantKey); orb.t = 0; orb.leaving = 1; }
+    } else if (orb.key && orb.ready) {
+      orb.t = (orb.t || 0) + dt;
+      orb.t = Math.min(orb.t, ORB_CYCLE);   // one appearance per visit to a slide; it stays sunk until the slide changes
+    }
+    const scale = (orb.key && orb.ready ? orbScale((orb.t || 0) - ORB_DELAY) : 0) * (orb.leaving ?? 1);
+    // jiggle spring, kicked by every change in size
+    const dS = (scale - (orb.prev || 0)) / Math.max(dt, 0.001);
+    orb.prev = scale;
+    orb.jv = (orb.jv || 0) + (-(orb.jig || 0) * 140 - (orb.jv || 0) * 7 + dS * 9) * dt;
+    orb.jig = Math.max(-0.3, Math.min(0.3, (orb.jig || 0) + orb.jv * dt));
+    // follow the cursor on a soft spring so the droplet trails behind like liquid; moving fast stretches it
+    if (pointer) {
+      const tgt = cursorSpot();
+      if (scale < 0.01) { orb.spot = tgt; orb.sv = [0, 0]; }
+      else {
+        const sv = orb.sv || [0, 0], sp = [orb.spot[0], orb.spot[1]];
+        for (let i = 0; i < 2; i++) {
+          sv[i] += ((tgt[i] - sp[i]) * 34 - sv[i] * 9) * dt;
+          sp[i] += sv[i] * dt;
+        }
+        orb.sv = sv; orb.spot = sp;
+        orb.jv += Math.min(3, Math.hypot(sv[0], sv[1])) * 2.2 * dt;
+      }
+    }
+    const R = 0.26 * scale;
+    const P = [orb.spot[0] + 0.06 * Math.sin(time * 0.7), orb.spot[1] + 0.05 * Math.sin(time * 0.9), 0.05 + 0.27 * Math.min(1, scale)];
+    if (orb.video && orb.ready && orb.video.readyState >= 2 && !window.__projectOpen && scale > 0.01) upload(orb.video);
+    const kk = 1.55 / (4.3 - P[2]);
+    orbScreen.x = innerWidth / 2 + P[0] * kk * innerHeight;
+    orbScreen.y = innerHeight / 2 - (P[1] + 0.1) * kk * innerHeight;
+    orbScreen.r = R * kk * innerHeight;
+    orbScreen.key = orb.key;
+    const live = scale > 0.6 && !!orb.key;
+    if (live !== orbScreen.live) {
+      orbScreen.live = live;
+      orbTag.classList.toggle("live", live);
+      orbTag.tabIndex = live ? 0 : -1;
+      if (live) {
+        orbTagText.innerHTML = `<b>${PROJECTS[orb.key].title}</b>Open project`;
+        orb.tagSize = null;   // re-measure for the new title
+        orbTag.setAttribute("aria-label", `Open project: ${PROJECTS[orb.key].title}`);
+      }
+    }
+    // label: placed from the droplet's full-size radius (so it doesn't pulse with the breathing),
+    // eased toward its target, and moved with sub-pixel transforms so it glides instead of stepping
+    if (!orb.tagSize || orb.tagSizeFor !== orb.key) {
+      orb.tagSize = [orbTag.offsetWidth, orbTag.offsetHeight]; orb.tagSizeFor = orb.key;
+    }
+    const fullR = 0.26 * kk * innerHeight;
+    const [tagW, tagH] = orb.tagSize;
+    if (orb.tagRight === undefined) orb.tagRight = true;
+    // flip sides only with some margin, so it doesn't flicker back and forth at the edge
+    if (orb.tagRight && orbScreen.x + fullR + 14 + tagW > innerWidth - 12) orb.tagRight = false;
+    else if (!orb.tagRight && orbScreen.x + fullR + 14 + tagW < innerWidth - 60) orb.tagRight = true;
+    const tx = orb.tagRight ? orbScreen.x + fullR + 14 : orbScreen.x - fullR - 14 - tagW;
+    const ty = orbScreen.y - tagH / 2;
+    if (!orbScreen.live || orb.tagX === undefined) { orb.tagX = tx; orb.tagY = ty; }
+    else {
+      const ease = 1 - Math.exp(-dt / 0.14);
+      orb.tagX += (tx - orb.tagX) * ease;
+      orb.tagY += (ty - orb.tagY) * ease;
+    }
+    orbTag.style.transform = `translate3d(${orb.tagX.toFixed(2)}px, ${orb.tagY.toFixed(2)}px, 0)`;
+
+    if (window.__projectOpen) { requestAnimationFrame(frame); return; }
+
+    gl.uniform2f(U.uRes, canvas.width, canvas.height);
+    gl.uniform1f(U.uTime, time);
+    gl.uniform1f(U.uSeed, cur.seed);
+    gl.uniform1f(U.uSnow, snow);
+    gl.uniform1f(U.uLiquid, liquid);
+    gl.uniform1f(U.uGone, gone);
+    const mt = stepMeteor(dt);
+    gl.uniform4f(U.uMeteor, mt[0], mt[1], mt[2], mt[3]);
+    gl.uniform1f(U.uMeteorLen, 0.04 + 0.12 * Math.min(1, Math.max(0, meteor.t) * 2));
+    gl.uniform1f(U.uFlow, flow);
+    gl.uniform2f(U.uMouse, sm.x, sm.y);
+    gl.uniform3fv(U.uC1, cur.pal[0]);
+    gl.uniform3fv(U.uC2, cur.pal[1]);
+    gl.uniform3fv(U.uC3, cur.pal[2]);
+    gl.uniform3fv(U.uC4, cur.pal[3]);
+    gl.uniform3fv(U.uGrab, grab.anchor);
+    gl.uniform3fv(U.uPull, grab.pull);
+    gl.uniform3f(U.uProjPos, P[0], P[1], P[2]);
+    gl.uniform1f(U.uProjR, R);
+    gl.uniform1f(U.uProjJig, orb.jig || 0);
+    gl.uniform1f(U.uTexAspect, orb.aspect);
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, tex);
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+    runPick();
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
+</script>
