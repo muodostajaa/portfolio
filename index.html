@@ -321,8 +321,8 @@
   .cv-col li b { font-weight: 600; }
   .cv-col li span { grid-column: 1; color: var(--muted); font-size: 13px; }
   .cv-col li time { grid-column: 2; grid-row: 1; color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; white-space: nowrap; }
-  .cv-tags { display: flex; flex-wrap: wrap; gap: 8px; }
-  .cv-tags li { display: block; padding: 5px 11px; border: 1px solid var(--faint); border-radius: 999px; font-size: 12px; }
+  .cv-col .cv-tags { display: flex; flex-wrap: wrap; gap: 8px; }
+  .cv-col .cv-tags li { display: block; padding: 5px 11px; border: 1px solid var(--faint); border-radius: 999px; font-size: 12px; }
   @media (max-width: 860px) { .cv-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
   @media (max-width: 560px) { .cv-grid { grid-template-columns: minmax(0, 1fr); } }
   @media (prefers-reduced-motion: reduce) { .cv-col { transition: none; } }
@@ -437,7 +437,7 @@
         <h2 class="w-title" id="cvTitle" aria-label="CV"></h2>
       </div>
       <div class="w-side">
-        <p>Senior Visual Design Specialist. Technical documentation, packaging design, 3D visualisation and animation.</p>
+        <p>Senior Visual Design Specialist and Packaging Designer. Technical documentation, packaging design, 3D visualisation and animation.</p>
         <button class="round" id="cvClose" type="button" aria-label="Close CV"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
       </div>
     </div>
@@ -459,6 +459,9 @@
         <div>
           <h3>Experience</h3>
           <ul>
+            <li><b>CoE Engineering</b><time>2026–</time><span>Senior Visual Design Specialist / Packaging Designer</span></li>
+            <li><b>Gofore</b><time>2026</time><span>Senior Visual Design Specialist / Packaging Designer</span></li>
+            <li><b>Huld</b><time>2020–2026</time><span>Senior Visual Design Specialist</span></li>
             <li><b>Misal Illumination</b><time>2019</time><span>Visual Design Specialist</span></li>
             <li><b>Snellmann Primary School</b><time>2015–2017</time><span>Assistant and substitute teacher</span></li>
             <li><b>Obelux</b><time>2008–2014</time><span>Visual Design Specialist</span></li>
@@ -475,7 +478,7 @@
       </div>
       <div class="cv-col">
         <div>
-          <h3>Tools</h3>
+          <h3>Selected tools</h3>
           <ul class="cv-tags">
             <li>SolidWorks</li><li>SolidWorks Composer</li><li>KeyShot</li><li>Illustrator</li><li>InDesign</li>
             <li>Photoshop</li><li>After Effects</li><li>Figma</li><li>Confluence</li><li>Jira</li>
