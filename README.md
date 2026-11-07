@@ -1,4 +1,4 @@
-# Sonja Tähtinen – portfolio
+# Sonja – portfolio
 
 Personal portfolio site. Open `index.html`, or visit the GitHub Pages link.
 
