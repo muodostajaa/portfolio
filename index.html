@@ -1291,7 +1291,9 @@ void main(){
   // Resolution scales down automatically if frames get slow
   // render resolution: phones and tablets start lower, the shader is heavy; drops further if frames are slow
   const touch = matchMedia("(pointer: coarse)").matches;
-  let renderScale = touch ? Math.min(devicePixelRatio || 1, 0.8) : Math.min(devicePixelRatio || 1, 1.25);
+  // desktop stays at 1.0 even on Retina: the image is soft anyway, and 2x pixels made MacBooks stutter
+  let renderScale = touch ? Math.min(devicePixelRatio || 1, 0.8) : Math.min(devicePixelRatio || 1, 1.0);
+  const MAX_SCALE = renderScale, MIN_SCALE = touch ? 0.55 : 0.7;
   function resize() {
     const w = Math.floor(innerWidth * renderScale), h = Math.floor(innerHeight * renderScale);
     if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; }
@@ -1309,7 +1311,8 @@ void main(){
     return [ux * k, -0.1 + uy * k, 0.15];
   }
   const grab = { active: false, anchor: [0, 0, 0], pull: [0, 0, 0], vel: [0, 0, 0], goal: [0, 0, 0], start: [0, 0, 0] };
-  let pick = null, lastHover = 0, pointer = null;
+  // hover check reads one pixel back from the GPU, which stalls the frame; do it only once the mouse rests
+  let pick = null, lastMove = 0, hoverPending = null, pointer = null;
 
   const onOrb = (x, y) => orbScreen.live && Math.hypot(x - orbScreen.x, y - orbScreen.y) < orbScreen.r;
   canvas.addEventListener("pointerdown", e => {
@@ -1330,9 +1333,9 @@ void main(){
       const L = Math.hypot(g[0], g[1], g[2]), max = 2.2;
       if (L > max) g = g.map(c => c * max / L);
       grab.goal = g;
-    } else if (e.pointerType === "mouse" && performance.now() - lastHover > 90 && !pick) {
-      lastHover = performance.now();
-      pick = { x: e.clientX, y: e.clientY, kind: "hover" };
+    } else if (e.pointerType === "mouse") {
+      lastMove = performance.now();
+      hoverPending = { x: e.clientX, y: e.clientY, kind: "hover" };
     }
   });
   function release() {
@@ -1441,15 +1444,33 @@ void main(){
     return 1 - smoother(t / VANISH.back);
   }
 
-  let last = performance.now(), time = 0, slowFrames = 0;
+  let last = performance.now(), time = 0;
+  // adaptive resolution from the average frame time.
+  // phones: slow = under ~22 fps (a steady 30 fps in iPhone low power mode is fine and must not count);
+  // desktop: slow = under ~42 fps, which on a 120 Hz MacBook already reads as stutter.
+  // quality may climb back after a drop, but never to a scale that was already too slow.
+  const SLOW_DT = touch ? 0.045 : 0.024;
+  let avgDt = 1 / 60, slowFor = 0, fastFor = 0, scaleCeil = Infinity;
+  function adaptScale(dt) {
+    avgDt += (dt - avgDt) * 0.05;
+    if (avgDt > SLOW_DT) { slowFor += dt; fastFor = 0; }
+    else if (avgDt < 0.018) { fastFor += dt; slowFor = 0; }
+    else { slowFor = 0; fastFor = 0; }
+    if (slowFor > 1.5 && renderScale > MIN_SCALE) {
+      scaleCeil = renderScale;
+      renderScale = Math.max(MIN_SCALE, renderScale * 0.85);
+      slowFor = 0; avgDt = 1 / 60; resize();
+    } else if (fastFor > 6 && renderScale < MAX_SCALE && renderScale / 0.85 < scaleCeil - 1e-3) {
+      renderScale = Math.min(MAX_SCALE, renderScale / 0.85);
+      fastFor = 0; avgDt = 1 / 60; resize();
+    }
+  }
   function frame(now) {
     const dt = Math.min((now - last) / 1000, 0.05);
     last = now;
     time += dt * (reduced ? 0.25 : 1);
-
-    // slow = under ~22 fps; a steady 30 fps (iPhone low power mode, some browsers) is fine and must not count
-    if (dt > 0.045) slowFrames++; else slowFrames = Math.max(0, slowFrames - 1);
-    if (slowFrames > 40 && renderScale > 0.55) { renderScale = Math.max(0.55, renderScale * 0.85); slowFrames = 0; resize(); }
+    adaptScale(dt);
+    if (hoverPending && !pick && !grab.active && now - lastMove > 120) { pick = hoverPending; hoverPending = null; }
 
     const k = 1 - Math.pow(0.02, dt);
     const mx = grab.active ? sm.x : mouse.x, my = grab.active ? sm.y : mouse.y;
