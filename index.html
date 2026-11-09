@@ -819,7 +819,7 @@
 
   // ---------- WebGL scene ----------
   const canvas = document.getElementById("stage");
-  const gl = canvas.getContext("webgl", { antialias: false, alpha: true, premultipliedAlpha: false });
+  const gl = canvas.getContext("webgl", { antialias: false, alpha: true, premultipliedAlpha: true, powerPreference: "high-performance", desynchronized: false });
   if (!gl) { canvas.remove(); return; }
 
   const vs = `attribute vec2 p; void main(){ gl_Position = vec4(p, 0.0, 1.0); }`;
@@ -1194,7 +1194,8 @@ void main(){
   col *= 1.0 - 0.3 * dot(uv * 0.9, uv * 0.9);
   // alpha 254 marks pixels of the sculpture so a click can tell if it hit it
   col += (hash(gl_FragCoord.xy + fract(uTime) * 61.0) - 0.5) / 255.0;   // dither: no banding in the dark sky
-  gl_FragColor = vec4(col, cover > 0.5 ? 254.0 / 255.0 : 1.0);
+  float alpha = cover > 0.5 ? 254.0 / 255.0 : 1.0;
+  gl_FragColor = vec4(col * alpha, alpha);   // premultiplied: Chrome on macOS composites this without an extra conversion pass
 }`;
 
   function compile(type, src) {
@@ -1272,6 +1273,13 @@ void main(){
     if (b.type === "video") {
       const v = document.createElement("video");
       v.muted = true; v.loop = true; v.playsInline = true; v.preload = "auto";
+      // re-upload the texture only when the video has a new frame (about 30 a second), not on every render
+      v._fresh = true;
+      if ("requestVideoFrameCallback" in v) {
+        v._rvfc = true;
+        const onFrame = () => { v._fresh = true; if (orb.video === v || !orb.video) v.requestVideoFrameCallback(onFrame); };
+        v.requestVideoFrameCallback(onFrame);
+      }
       v.addEventListener("loadeddata", () => {
         if (orb.key !== key) return;
         orb.video = v; orb.aspect = v.videoWidth / v.videoHeight; orb.ready = true; upload(v);
@@ -1465,7 +1473,32 @@ void main(){
       fastFor = 0; avgDt = 1 / 60; resize();
     }
   }
+  // 120 Hz screens (MacBook Pro ProMotion): render every other refresh for an even 60 fps.
+  // an uneven 70-110 fps judders more than a steady 60; 60 Hz screens render every refresh as before
+  const MIN_FRAME_MS = 1000 / 60 - 3;
+  let lastRender = 0;
+
+  // ?debug in the address shows frame rate, render scale and the GPU in the corner
+  const dbg = /[?&]debug\b/.test(location.search) ? document.body.appendChild(document.createElement("pre")) : null;
+  let dbgFrames = 0, dbgAt = performance.now(), dbgGpu = "";
+  if (dbg) {
+    dbg.style.cssText = "position:fixed;left:8px;top:8px;z-index:999;margin:0;padding:8px 10px;background:rgba(0,0,0,.75);color:#9f9;font:11px/1.5 monospace;pointer-events:none;white-space:pre";
+    const ext = gl.getExtension("WEBGL_debug_renderer_info");
+    dbgGpu = String(ext ? gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER));
+    dbg.textContent = "measuring...\n" + dbgGpu;
+  }
+  function debugInfo(now) {
+    dbgFrames++;
+    if (now - dbgAt < 500) return;
+    const fps = dbgFrames * 1000 / (now - dbgAt);
+    dbg.textContent = `${fps.toFixed(0)} fps  avg ${(avgDt * 1000).toFixed(1)} ms\nscale ${renderScale.toFixed(2)}  canvas ${canvas.width}x${canvas.height}  dpr ${devicePixelRatio}\n${dbgGpu}`;
+    dbgFrames = 0; dbgAt = now;
+  }
+
   function frame(now) {
+    if (now - lastRender < MIN_FRAME_MS) { requestAnimationFrame(frame); return; }
+    lastRender = now;
+    if (dbg) debugInfo(now);
     const dt = Math.min((now - last) / 1000, 0.05);
     last = now;
     time += dt * (reduced ? 0.25 : 1);
@@ -1524,7 +1557,10 @@ void main(){
     }
     const R = 0.26 * scale;
     const P = [orb.spot[0] + 0.06 * Math.sin(time * 0.7), orb.spot[1] + 0.05 * Math.sin(time * 0.9), 0.05 + 0.27 * Math.min(1, scale)];
-    if (orb.video && orb.ready && orb.video.readyState >= 2 && !window.__projectOpen && scale > 0.01) upload(orb.video);
+    if (orb.video && orb.ready && orb.video.readyState >= 2 && !window.__projectOpen && scale > 0.01 && (!orb.video._rvfc || orb.video._fresh)) {
+      orb.video._fresh = false;
+      upload(orb.video);
+    }
     const kk = 1.55 / (4.3 - P[2]);
     orbScreen.x = innerWidth / 2 + P[0] * kk * innerHeight;
     orbScreen.y = innerHeight / 2 - (P[1] + 0.1) * kk * innerHeight;
